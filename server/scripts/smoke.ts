@@ -1,9 +1,9 @@
 /**
  * End-to-end smoke test against a running server. Two players play one full
- * round using the shortened WORDT_*_SECONDS timers.
+ * round. Any WORDT_*_SECONDS values work — the waits below are deliberately
+ * generous, so a long word phase just makes the run slower.
  *
- *   WORDT_PICK_SECONDS=4 WORDT_VALUE_REVEAL_SECONDS=2 WORDT_WORD_SECONDS=10 \
- *     WORDT_REVIEW_STEP_SECONDS=2 npm run start --workspace @wordt/server
+ *   npm run start --workspace @wordt/server
  *   npm run smoke --workspace @wordt/server
  *
  * State is cached from the moment a socket connects, because the server sends
@@ -126,6 +126,7 @@ async function main(): Promise<void> {
   assert(own.words.length === 0, 'no words yet');
 
   assert((await emit(ann, 'pick:lock')).ok, 'ann lock failed');
+  assert((await emit(bob, 'pick:lock')).ok, 'bob lock failed');
   const valueTable = await awaitState(ann, (s) => s.phase === 'VALUE_TABLE', 8000, 'VALUE_TABLE');
   const table = valueTable.letterValues.entries.map((e: any) => `${e.letter}=${e.value}`).join(' ');
   console.log(`value table: ${table}`);
@@ -149,7 +150,7 @@ async function main(): Promise<void> {
   assert(ownWords.wrongTries === 2, `expected 2 wrong tries, got ${ownWords.wrongTries}`);
   assert(ownWords.totalTries === 3, `expected 3 total tries, got ${ownWords.totalTries}`);
 
-  const review = await awaitState(ann, (s) => s.phase === 'REVIEW', 8000, 'REVIEW');
+  const review = await awaitState(ann, (s) => s.phase === 'REVIEW', 60000, 'REVIEW');
   assert(review.reviewSteps.length >= 2, 'expected review steps');
   console.log(`review steps: ${review.reviewSteps.map((s: any) => s.kind).join(' -> ')}`);
 
