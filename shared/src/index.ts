@@ -6,6 +6,7 @@ export {
   countPick,
 } from './letterValues';
 export { validateWord, normalizeWord, defaultWordContext } from './validate';
+export { teamName, mergeTeam, lettersPerTeamMember } from './teams';
 export {
   scoreRound,
   sortStandings,

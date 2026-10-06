@@ -22,6 +22,20 @@ export const USABLE_MIN_COUNT = 2;
 export const VALUE_MIN = 1;
 export const VALUE_MAX = 5;
 
+// --- Draft penalty ---
+/** Points lost for every letter a player drafted that appears in none of
+ *  their valid words. Drafting letters you never play is meant to cost you. */
+export const DRAFT_PENALTY_PER_UNUSED_LETTER = 1;
+
+// --- Teams ---
+/** Two teams, this many players on each. */
+export const TEAM_MAX_PLAYERS = 2;
+/** Letters a whole team drafts between them; split across its members. */
+export const TEAM_LETTERS_TOTAL = 10;
+export const TEAM_IDS = ['A', 'B'] as const;
+export type TeamId = (typeof TEAM_IDS)[number];
+export const TEAM_NAMES: Readonly<Record<TeamId, string>> = { A: 'Team A', B: 'Team B' };
+
 // --- Round bonuses ---
 export const BONUS_UNIQUE_WORD = 2;
 export const BONUS_MOST_UNIQUE_WORDS = 2;

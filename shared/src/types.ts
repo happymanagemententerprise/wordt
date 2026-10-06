@@ -52,13 +52,21 @@ export interface AcceptedWord {
   score: number;
 }
 
-/** A player's contribution to one round's scoring. Words are already validated. */
+/** A player's contribution to one round's scoring. Words are already validated.
+ *  In team mode the two teammates are merged into a single unit before scoring,
+ *  so a team competes exactly like one player would. */
 export interface RoundPlayerInput {
   id: PlayerId;
   name: string;
   validWords: string[];
   wrongTries: number;
   totalTries: number;
+  /** Letters this unit drafted, used to work out the draft penalty. */
+  pick: Letter[];
+  /** Team name when this unit is a merged team; null for free-for-all play. */
+  teamName?: string | null;
+  /** word -> the member who found it, so a merged team still credits a person. */
+  wordAuthors?: Record<string, string>;
 }
 
 export type RoundScoreInput = {
@@ -76,15 +84,23 @@ export interface StatAward {
   winners: PlayerId[];
   /** The value that was achieved, for display. */
   value: number | string;
+  /** Who to credit on screen: "Alice", or "Team A · Alice" when teams are on. */
+  credit: string;
 }
 
 export interface PlayerRoundResult {
   id: PlayerId;
   name: string;
+  /** Team name for a merged team unit, otherwise null. */
+  teamName: string | null;
   /** word -> points earned by that word, before penalties/bonuses. */
   wordPoints: Record<string, number>;
   baseScore: number;
   sameWordPenalty: number;
+  /** Negative: one point for every drafted letter this unit never used. */
+  draftPenalty: number;
+  /** The drafted letters that never made it into a word. */
+  draftUnused: Letter[];
   bonuses: { stat: string; points: number }[];
   roundScore: number;
   validWordCount: number;
@@ -93,12 +109,29 @@ export interface PlayerRoundResult {
   totalTries: number;
   /** wrong / total, or null when the player had no tries. */
   accuracy: number | null;
+  /** Member who wrote the longest word, for team attribution. */
+  longestWordAuthor: string | null;
+  /** Member who wrote the highest-scoring word, for team attribution. */
+  bestWordAuthor: string | null;
 }
 
 export interface UniqueWordReveal {
   word: string;
   playerId: PlayerId;
   playerName: string;
+  points: number;
+  /** "Alice" or "Team A · Alice". */
+  credit: string;
+}
+
+/** One unit's share of the draft penalty, revealed before the leaderboard. */
+export interface DraftPenaltyEntry {
+  id: PlayerId;
+  /** "Alice" or "Team A". */
+  label: string;
+  /** Letters drafted that appear in none of this unit's valid words. */
+  unused: Letter[];
+  /** Always negative or zero. */
   points: number;
 }
 
@@ -109,6 +142,8 @@ export interface RoundResult {
   /** Words submitted by the most players (only when submitted by 2+ players). */
   mostUsedWords: string[];
   statAwards: StatAward[];
+  /** Only the units that actually lost points to the draft penalty. */
+  draftPenalties: DraftPenaltyEntry[];
 }
 
 /** One player's live record in a room. */
@@ -132,9 +167,10 @@ export interface RoomPlayer {
 
 /** One step of the end-of-round result review, revealed on the TV in order. */
 export type ReviewStep =
-  | { kind: 'unique_word'; word: string; playerId: PlayerId; playerName: string; points: number }
+  | { kind: 'unique_word'; word: string; playerId: PlayerId; playerName: string; points: number; credit: string }
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }
+  | { kind: 'draft_penalty'; entries: DraftPenaltyEntry[] }
   | { kind: 'leaderboard' };
 
 export interface PublicPlayer {
@@ -148,6 +184,32 @@ export interface PublicPlayer {
   wrongTries: number;
   totalTries: number;
   isHost: boolean;
+  /** Team this player belongs to, or null in free-for-all play. */
+  teamId: string | null;
+  /** Letters picked so far this round; shared so teammates do not double up. */
+  pick: Letter[];
+}
+
+/** A team as one competitor: the standings row shown when teams are on. */
+export interface PublicTeam {
+  id: string;
+  name: string;
+  score: number;
+  memberIds: PlayerId[];
+  connected: boolean;
+  validWordCount: number;
+  wrongTries: number;
+  totalTries: number;
+  isHost: boolean;
+}
+
+/** A word accepted during the word phase, pushed live to the TV. */
+export interface FeedItem {
+  word: string;
+  playerId: PlayerId;
+  playerName: string;
+  teamName: string | null;
+  score: number;
 }
 
 export interface PublicRoomState {
@@ -171,6 +233,13 @@ export interface PublicRoomState {
   /** Only populated during REVIEW. */
   reviewSteps: ReviewStep[];
   reviewIndex: number;
+  /** Team play. */
+  teamsEnabled: boolean;
+  teams: PublicTeam[] | null;
+  /** Who is leading: team rows when teams are on, otherwise the players. */
+  standings: PublicPlayer[];
+  /** Most recent accepted words, newest last. */
+  feed: FeedItem[];
 }
 
 /** Everything a phone client is allowed to see about its own seat. */
@@ -186,6 +255,8 @@ export interface OwnState {
   wrongTries: number;
   totalTries: number;
   score: number;
+  teamId: string | null;
+  teamName: string | null;
 }
 
 export interface JoinRequest {

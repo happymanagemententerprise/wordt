@@ -6,10 +6,13 @@ import {
   BONUS_MOST_POINT_WORDS,
   BONUS_MOST_UNIQUE_WORDS,
   BONUS_UNIQUE_WORD,
+  DRAFT_PENALTY_PER_UNUSED_LETTER,
   SHARE_POINTS_ON_STAT_TIES,
 } from './config';
 import { scoreWord } from './letterValues';
 import type {
+  DraftPenaltyEntry,
+  Letter,
   PlayerId,
   PlayerRoundResult,
   RoundPlayerInput,
@@ -49,8 +52,8 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
  * Scores one round. Pure: no clock, no I/O, no randomness.
  *
  * Runs in a fixed order so the review sequence shown on the TV is stable:
- * base scores, same-word penalty, unique words, then each stat bonus, then
- * the highlight-only most-used word.
+ * base scores, same-word penalty, draft penalty, unique words, then each stat
+ * bonus, then the highlight-only most-used word.
  */
 export function scoreRound(
   input: RoundScoreInput,
@@ -69,12 +72,39 @@ export function scoreRound(
       base += points;
     }
 
+    // Who found what, so a merged team can still credit an individual.
+    let longestLength = 0;
+    let longestAuthor: string | null = null;
+    let bestPoints = 0;
+    let bestAuthor: string | null = null;
+    for (const word of player.validWords) {
+      const author = player.wordAuthors?.[word] ?? player.name;
+      const points = wordPoints[word] ?? 0;
+      if (word.length > longestLength) {
+        longestLength = word.length;
+        longestAuthor = author;
+      }
+      if (points > bestPoints) {
+        bestPoints = points;
+        bestAuthor = author;
+      }
+    }
+
+    const draftUnused = unusedDraftedLetters(player.pick, player.validWords);
+    // Written so an empty list yields +0 rather than -0.
+    const draftPenalty = draftUnused.length === 0
+      ? 0
+      : -draftUnused.length * DRAFT_PENALTY_PER_UNUSED_LETTER;
+
     results.set(player.id, {
       id: player.id,
       name: player.name,
+      teamName: player.teamName ?? null,
       wordPoints,
       baseScore: base,
       sameWordPenalty: 0,
+      draftPenalty,
+      draftUnused,
       bonuses: [],
       roundScore: base,
       validWordCount: player.validWords.length,
@@ -83,6 +113,8 @@ export function scoreRound(
       totalTries: player.totalTries,
       accuracy:
         player.totalTries > 0 ? player.wrongTries / player.totalTries : null,
+      longestWordAuthor: longestAuthor,
+      bestWordAuthor: bestAuthor,
     });
   }
 
@@ -115,6 +147,7 @@ export function scoreRound(
       playerId: ownerId,
       playerName: owner.name,
       points,
+      credit: creditWithAuthor(owner, owner.name, wordAuthor(players, ownerId, word)),
     });
   }
   uniqueWords.sort((a, b) => b.word.length - a.word.length || a.word.localeCompare(b.word));
@@ -138,6 +171,7 @@ export function scoreRound(
     label: 'Longest word',
     points: config.bonuses.longestWord,
     valueOf: (result) => longestWordLength(result),
+    authorOf: (result) => result.longestWordAuthor,
   });
 
   awardTracker.awardHighest({
@@ -145,6 +179,7 @@ export function scoreRound(
     label: 'Highest-scoring word',
     points: config.bonuses.mostPointWords,
     valueOf: (result) => bestWordScore(result),
+    authorOf: (result) => result.bestWordAuthor,
   });
 
   awardBestAccuracy(players, results, config, awardTracker);
@@ -152,19 +187,66 @@ export function scoreRound(
   // --- Highlight only: the word the most players used ---
   const mostUsedWords = findMostUsedWords(submitterCount);
 
-  // --- Final round score: base, minus shared-word penalties, plus bonuses ---
+  // --- Final round score: base, shared-word and draft penalties, plus bonuses ---
   const ordered = players.map((player) => results.get(player.id)!).filter(Boolean);
+  const draftPenalties: DraftPenaltyEntry[] = [];
   for (const result of ordered) {
     const bonusTotal = result.bonuses.reduce((sum, bonus) => sum + bonus.points, 0);
-    result.roundScore = result.baseScore + result.sameWordPenalty + bonusTotal;
+    result.roundScore =
+      result.baseScore + result.sameWordPenalty + result.draftPenalty + bonusTotal;
+    if (result.draftPenalty < 0) {
+      draftPenalties.push({
+        id: result.id,
+        label: result.teamName ?? result.name,
+        unused: result.draftUnused,
+        points: result.draftPenalty,
+      });
+    }
   }
+  draftPenalties.sort((a, b) => a.points - b.points || a.label.localeCompare(b.label));
 
   return {
     players: ordered,
     uniqueWords,
     mostUsedWords,
     statAwards: awardTracker.completed(),
+    draftPenalties,
   };
+}
+
+/** Letters this unit drafted that appear in none of its valid words. */
+function unusedDraftedLetters(
+  pick: readonly Letter[],
+  validWords: readonly string[],
+): Letter[] {
+  const used = new Set<string>();
+  for (const word of validWords) {
+    for (const letter of word) used.add(letter);
+  }
+  const unused: Letter[] = [];
+  for (const letter of new Set(pick)) {
+    if (!used.has(letter)) unused.push(letter);
+  }
+  return unused;
+}
+
+function wordAuthor(
+  players: readonly RoundPlayerInput[],
+  id: PlayerId,
+  word: string,
+): string {
+  const input = players.find((player) => player.id === id);
+  return input?.wordAuthors?.[word] ?? input?.name ?? id;
+}
+
+/** "Alice", or "Team A · Alice" when the unit is a team and someone else found it. */
+function creditWithAuthor(
+  result: PlayerRoundResult,
+  label: string,
+  author: string,
+): string {
+  if (result.teamName && author !== label) return `${label} · ${author}`;
+  return author;
 }
 
 function countSubmitters(players: readonly RoundPlayerInput[]): Map<string, PlayerId[]> {
@@ -219,6 +301,8 @@ interface AwardSpec<T> {
   valueOf: (result: PlayerRoundResult) => T;
   /** Returns true when a higher value means a better result. Defaults to numeric >. */
   higherIsBetter?: (a: T, b: T) => boolean;
+  /** The member who actually produced the value, for team attribution. */
+  authorOf?: (result: PlayerRoundResult) => string | null;
 }
 
 class AwardTracker {
@@ -280,9 +364,30 @@ class AwardTracker {
       points: shared ? spec.points : 0,
       winners,
       value,
+      credit: this.creditFor(winners, spec.authorOf),
     };
     this.awards.push(award);
     return award;
+  }
+
+  /** How the reviewers should read the winner out loud. */
+  private creditFor(
+    winners: PlayerId[],
+    authorOf?: (result: PlayerRoundResult) => string | null,
+  ): string {
+    const labels = [...new Set(winners.map((id) => this.labelFor(id)))];
+    const only = winners.length === 1 ? this.results.get(winners[0]!) : undefined;
+    const author = only && authorOf ? authorOf(only) : null;
+    if (author && labels.length === 1 && author !== labels[0]) {
+      return `${labels[0]} · ${author}`;
+    }
+    return labels.join(', ');
+  }
+
+  private labelFor(id: PlayerId): string {
+    const result = this.results.get(id);
+    if (!result) return id;
+    return result.teamName ?? result.name;
   }
 }
 

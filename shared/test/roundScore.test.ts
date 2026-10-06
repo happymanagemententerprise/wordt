@@ -23,6 +23,7 @@ function player(
     validWords,
     wrongTries: 0,
     totalTries: validWords.length,
+    pick: [],
     ...opts,
   };
 }
