@@ -8,8 +8,10 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
   const own = game.own;
   if (!state || !own) return null;
 
-  const standings = final ? (state.finalStandings ?? state.players) : state.players;
-  const mine = state.lastRoundResult?.players.find((player) => player.id === own.id);
+  const standings = final ? (state.finalStandings ?? state.standings) : state.standings;
+  const teamPlay = state.teamsEnabled && Boolean(own.teamId);
+  const unitId = teamPlay ? (own.teamId as string) : own.id;
+  const mine = state.lastRoundResult?.players.find((unit) => unit.id === unitId);
 
   return (
     <section className="screen">
@@ -17,14 +19,16 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
 
       {mine ? (
         <p className="myround">
-          You scored <strong>{mine.roundScore}</strong> this round (
+          {teamPlay ? 'Your team scored' : 'You scored'}{' '}
+          <strong>{mine.roundScore}</strong> this round (
           {mine.baseScore} words
           {mine.sameWordPenalty !== 0 ? `, ${mine.sameWordPenalty} shared penalty` : ''}
+          {mine.draftPenalty !== 0 ? `, ${mine.draftPenalty} draft penalty` : ''}
           {mine.bonuses.length > 0 ? `, +${mine.bonuses.reduce((sum, b) => sum + b.points, 0)} bonuses` : ''})
         </p>
       ) : null}
 
-      <Standings players={standings} activeId={own.id} showStats={final} />
+      <Standings players={standings} activeId={unitId} showStats={final} />
 
       <div className="actions">
         {!own.isHost ? (

@@ -68,6 +68,9 @@ export interface GameApi {
   nextRound: () => Promise<Ack>;
   newGame: () => Promise<Ack>;
   backToLobby: () => Promise<Ack>;
+  endGame: () => Promise<Ack>;
+  setTeamsEnabled: (enabled: boolean) => Promise<Ack>;
+  setTeam: (teamId: 'A' | 'B') => Promise<Ack>;
   setPick: (letters: string[]) => Promise<Ack>;
   lockPick: () => Promise<Ack>;
   submitWord: (word: string) => Promise<Ack>;
@@ -198,6 +201,9 @@ export function useGame(): GameApi {
     nextRound: () => guarded('host:next'),
     newGame: () => guarded('host:start'),
     backToLobby: () => guarded('host:lobby'),
+    endGame: () => guarded('host:end'),
+    setTeamsEnabled: (enabled) => guarded('host:teams', { enabled }),
+    setTeam: (teamId) => guarded('team:set', { teamId }),
     setPick: (letters) => ask('pick:set', { letters }),
     lockPick: () => guarded('pick:lock'),
     submitWord: (word) => ask('word:submit', { word }),

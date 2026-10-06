@@ -40,8 +40,17 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
 
   if (!state || !own) return null;
 
+  // Letters a teammate already claimed; the team's draft must not overlap.
+  const teammatePicks = new Set(
+    own.teamId
+      ? state.players
+          .filter((player) => player.id !== own.id && player.teamId === own.teamId)
+          .flatMap((player) => player.pick)
+      : [],
+  );
+
   const toggle = (letter: string) => {
-    if (own.pickedLocked) return;
+    if (own.pickedLocked || teammatePicks.has(letter)) return;
     const next = selected.includes(letter)
       ? selected.filter((picked) => picked !== letter)
       : selected.length < own.pickLimit
@@ -54,13 +63,23 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
   };
 
   const lockedCount = state.players.filter((player) => player.pickedLocked).length;
+  const readyCount = own.teamId
+    ? state.players.filter((player) => player.teamId === own.teamId && player.pickedLocked).length +
+      '/' +
+      state.players.filter((player) => player.teamId === own.teamId).length +
+      ' teammates ready'
+    : `${lockedCount} of ${state.players.length} players ready`;
 
   return (
     <section className="screen">
       <div className="screen__head">
         <div>
           <h2>Pick your letters</h2>
-          <p className="hint">Letters picked by two or more players become usable.</p>
+          <p className="hint">
+            {own.teamId
+              ? 'Your team picks ten letters between you, so no one grabs the same one.'
+              : 'Letters picked by two or more players become usable.'}
+          </p>
         </div>
         <Countdown endsAt={state.phaseEndsAt} />
       </div>
@@ -72,12 +91,13 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
       <div className={`keyboard${own.pickedLocked ? ' keyboard--locked' : ''}`}>
         {ALPHABET.map((letter) => {
           const active = selected.includes(letter);
+          const blocked = teammatePicks.has(letter);
           return (
             <button
               key={letter}
               type="button"
-              className={`key${active ? ' key--on' : ''}`}
-              disabled={own.pickedLocked || (!active && selected.length >= own.pickLimit)}
+              className={`key${active ? ' key--on' : ''}${blocked ? ' key--teammate' : ''}`}
+              disabled={own.pickedLocked || blocked || (!active && selected.length >= own.pickLimit)}
               aria-pressed={active}
               onClick={() => toggle(letter)}
             >
@@ -89,9 +109,7 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
 
       <div className="actions">
         {own.pickedLocked ? (
-          <p className="locked">
-            Locked in · {lockedCount} of {state.players.length} players ready
-          </p>
+          <p className="locked">Locked in · {readyCount}</p>
         ) : (
           <button className="btn btn--primary" type="button" onClick={() => void game.lockPick()}>
             Lock in my letters

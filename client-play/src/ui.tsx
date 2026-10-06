@@ -85,6 +85,9 @@ export function Standings({
           <span className="standing__name">
             {player.name}
             {player.isHost ? <span className="tag">host</span> : null}
+            {player.teamId && player.teamId !== player.id ? (
+              <span className="tag tag--team">{player.teamId === 'A' ? 'A' : 'B'}</span>
+            ) : null}
             {!player.connected ? <span className="tag tag--away">offline</span> : null}
           </span>
           {showStats ? (

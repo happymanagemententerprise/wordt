@@ -264,6 +264,71 @@ h2 {
   color: var(--accent-ink);
 }
 
+.btn--ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.topbar__end {
+  width: auto;
+  min-height: 0;
+  margin-left: 0.35rem;
+  padding: 0.32rem 0.6rem;
+  font-size: 0.72rem;
+}
+
+/* --- teams ---------------------------------------------------------------- */
+
+.teams {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.team-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.team-card--on {
+  border-color: var(--accent);
+  background: rgba(255, 209, 102, 0.14);
+}
+
+.team-card__name {
+  font-weight: 800;
+}
+
+.team-card__meta {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.team-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.key--teammate {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pill--team {
+  background: rgba(125, 211, 252, 0.16);
+  color: #7dd3fc;
+}
+
 .actions {
   display: flex;
   flex-direction: column;
@@ -438,6 +503,11 @@ h2 {
 .tag--away {
   background: var(--surface-2);
   color: var(--muted);
+}
+
+.tag--team {
+  background: rgba(125, 211, 252, 0.18);
+  color: #7dd3fc;
 }
 
 /* --- countdown ----------------------------------------------------------- */

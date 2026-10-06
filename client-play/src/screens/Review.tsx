@@ -9,8 +9,10 @@ export function Review({ game }: { game: GameApi }): ReactNode {
   if (!state || !own) return null;
 
   const step = state.reviewSteps[state.reviewIndex];
-  const mine = state.lastRoundResult?.players.find((player) => player.id === own.id);
-  const nameOf = (id: string) => state.players.find((player) => player.id === id)?.name ?? 'Someone';
+  // With teams on, the scoring unit is the team, not the person holding the phone.
+  const unitId = state.teamsEnabled && own.teamId ? own.teamId : own.id;
+  const mine = state.lastRoundResult?.players.find((unit) => unit.id === unitId);
+  const activeId = state.teamsEnabled && own.teamId ? own.teamId : own.id;
 
   return (
     <section className="screen">
@@ -25,7 +27,7 @@ export function Review({ game }: { game: GameApi }): ReactNode {
           <>
             <p className="eyebrow">Unique word · +{step.points}</p>
             <p className="reveal__word">{step.word}</p>
-            <p className="reveal__who">only {step.playerName} found it</p>
+            <p className="reveal__who">only {step.credit} found it</p>
           </>
         ) : step.kind === 'most_used_word' ? (
           <>
@@ -40,22 +42,30 @@ export function Review({ game }: { game: GameApi }): ReactNode {
             </p>
             <p className="reveal__word">{String(step.award.value)}</p>
             <p className="reveal__who">
-              {step.award.winners.length > 0
-                ? step.award.winners.map(nameOf).join(', ')
-                : 'shared too evenly — nobody scored'}
+              {step.award.credit || 'shared too evenly — nobody scored'}
+            </p>
+          </>
+        ) : step.kind === 'draft_penalty' ? (
+          <>
+            <p className="eyebrow">Draft penalty</p>
+            <p className="reveal__word">{step.entries.length}</p>
+            <p className="reveal__who">
+              {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
             </p>
           </>
         ) : (
           <>
             <p className="eyebrow">Standings</p>
-            <Standings players={state.players} activeId={own.id} />
+            <Standings players={state.standings} activeId={activeId} />
           </>
         )}
       </div>
 
       {mine ? (
         <p className="myround">
-          Your round: <strong>{mine.roundScore}</strong> points from {mine.validWordCount} words
+          {state.teamsEnabled ? 'Your team' : 'Your round'}:{' '}
+          <strong>{mine.roundScore}</strong> points from {mine.validWordCount} words
+          {mine.draftPenalty !== 0 ? `, ${mine.draftPenalty} draft penalty` : ''}
         </p>
       ) : null}
 

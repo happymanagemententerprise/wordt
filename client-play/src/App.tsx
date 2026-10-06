@@ -69,6 +69,16 @@ export default function App(): ReactNode {
         <span className="brand">Wordt</span>
         <span className="topbar__code">{state.roomCode}</span>
         <PhasePill round={state.round} roundCount={state.roundCount} phase={state.phase} />
+        {own.isHost && state.phase !== 'LOBBY' && state.phase !== 'GAME_OVER' ? (
+          <button
+            className="btn btn--ghost topbar__end"
+            type="button"
+            disabled={game.busy}
+            onClick={() => void game.endGame()}
+          >
+            End game
+          </button>
+        ) : null}
       </header>
 
       {game.error ? (

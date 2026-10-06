@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { TEAM_IDS, TEAM_MAX_PLAYERS, teamName } from '@wordt/shared';
+
 import type { GameApi } from '../game';
 import { Standings } from '../ui';
 
@@ -24,8 +26,48 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
       </h3>
       <Standings players={state.players} activeId={own.id} />
 
+      {state.teamsEnabled ? (
+        <>
+          <h3 className="subhead">
+            Teams <span className="count">{TEAM_MAX_PLAYERS} per team</span>
+          </h3>
+          <div className="teams">
+            {TEAM_IDS.map((teamId) => {
+              const members = state.players.filter((player) => player.teamId === teamId);
+              const mine = own.teamId === teamId;
+              const full = members.length >= TEAM_MAX_PLAYERS;
+              return (
+                <button
+                  key={teamId}
+                  type="button"
+                  className={`team-card${mine ? ' team-card--on' : ''}`}
+                  disabled={game.busy || (!mine && full)}
+                  onClick={() => void game.setTeam(teamId)}
+                >
+                  <span className="team-card__name">{teamName(teamId)}</span>
+                  <span className="team-card__meta">
+                    {members.length > 0 ? members.map((member) => member.name).join(', ') : 'open'}
+                  </span>
+                  <span className="team-card__meta">
+                    {members.length}/{TEAM_MAX_PLAYERS} · {mine ? 'you' : 'tap to join'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
       {own.isHost ? (
         <div className="actions">
+          <button
+            className="btn btn--ghost"
+            type="button"
+            disabled={game.busy}
+            onClick={() => void game.setTeamsEnabled(!state.teamsEnabled)}
+          >
+            {state.teamsEnabled ? 'Turn teams off' : 'Turn teams on'}
+          </button>
           <button
             className="btn btn--primary"
             type="button"
