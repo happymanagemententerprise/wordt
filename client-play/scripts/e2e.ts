@@ -1,19 +1,21 @@
 /**
- * Drives the phone client through a complete round in a real browser.
+ * Drives the phone and TV clients through a complete round in a real browser.
  *
- * Prerequisites (both must already be running):
+ * Prerequisites (all must already be running):
  *   npm run dev:server                       # http://localhost:3000
  *   npm run dev:play                         # http://localhost:5173
+ *   npm run dev:tv                           # http://localhost:5174
  *
  *   npm run e2e --workspace @wordt/client-play
  *
- * Short server timers make this fast:
- *   WORDT_VALUE_REVEAL_SECONDS=3 WORDT_WORD_SECONDS=30 WORDT_REVIEW_STEP_SECONDS=1
+ * The server's WORDT_*_SECONDS timers only need to be long enough to act
+ * against — the waits below adapt to whatever they are set to.
  */
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 
 const SERVER = 'http://localhost:3000/socket.io/?EIO=4&transport=polling';
 const CLIENT = 'http://localhost:5173/';
+const TV = 'http://localhost:5174/';
 const PICK = ['S', 'T', 'A', 'R', 'E', 'O', 'N', 'I', 'L', 'D'];
 
 const pageErrors: string[] = [];
@@ -69,6 +71,7 @@ async function pickLetters(page: Page): Promise<void> {
 async function main(): Promise<void> {
   await assertRunning(SERVER, 'The game server');
   await assertRunning(CLIENT, 'The phone client');
+  await assertRunning(TV, 'The TV client');
 
   let browser: Browser | null = null;
   try {
@@ -89,10 +92,22 @@ async function main(): Promise<void> {
     await bob.page.locator('.standing').nth(1).waitFor({ state: 'visible' });
     console.log('both players are in the lobby');
 
+    const tvContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const tv = await tvContext.newPage();
+    watch(tv, 'TV');
+    await tv.goto(`${TV}?room=${code}`);
+    await tv.locator('.tv-code').waitFor({ state: 'visible', timeout: 20000 });
+    const tvLobbyPlayers = await tv.locator('.tv-namelist li').count();
+    assert(tvLobbyPlayers === 2, `expected the TV lobby to list 2 players, saw ${tvLobbyPlayers}`);
+    console.log(`the TV is watching room ${code}`);
+
     await ann.page.getByRole('button', { name: 'Start game' }).click();
 
     await ann.page.locator('.keyboard').waitFor({ state: 'visible' });
     await bob.page.locator('.keyboard').waitFor({ state: 'visible' });
+    await tv.locator('.tv-pick').nth(1).waitFor({ state: 'visible' });
+    const tvPicks = await tv.locator('.tv-pick').count();
+    assert(tvPicks === 2, `expected the TV to track 2 pickers, saw ${tvPicks}`);
     await pickLetters(ann.page);
     await pickLetters(bob.page);
     console.log('both players picked ten letters');
@@ -107,6 +122,11 @@ async function main(): Promise<void> {
 
     await ann.page.locator('.input--word').waitFor({ state: 'visible', timeout: 20000 });
     await bob.page.locator('.input--word').waitFor({ state: 'visible', timeout: 20000 });
+    await tv.locator('.tv-writer').nth(1).waitFor({ state: 'visible', timeout: 15000 });
+    const tvValues = await tv.locator('.tv-value').count();
+    const tvWriters = await tv.locator('.tv-writer').count();
+    assert(tvValues === 10, `expected the TV to show 10 letter values, saw ${tvValues}`);
+    assert(tvWriters === 2, `expected the TV to track 2 writers, saw ${tvWriters}`);
 
     await ann.page.locator('.input--word').fill('ZZZZ');
     await ann.page.getByRole('button', { name: 'Add', exact: true }).click();
@@ -126,6 +146,8 @@ async function main(): Promise<void> {
     console.log('both players submitted a word');
 
     await ann.page.locator('.reveal').waitFor({ state: 'visible', timeout: 60000 });
+    await tv.locator('.tv-reveal').waitFor({ state: 'visible', timeout: 15000 });
+    console.log('the TV is revealing the review');
     const resultsHeading = ann.page.getByRole('heading', { name: 'Round 1 results' });
     for (let step = 0; step < 25; step += 1) {
       if (await resultsHeading.isVisible()) break;
@@ -134,7 +156,10 @@ async function main(): Promise<void> {
       await ann.page.waitForTimeout(250);
     }
     await resultsHeading.waitFor({ state: 'visible', timeout: 15000 });
-    console.log('walked the review through to the round results');
+    await tv.getByRole('heading', { name: 'Round 1 results' }).waitFor({ state: 'visible', timeout: 15000 });
+    const tvStandings = await tv.locator('.tv-standing').count();
+    assert(tvStandings === 2, `expected the TV to show 2 standings, saw ${tvStandings}`);
+    console.log('walked the review through to the round results on both screens');
 
     await ann.page.locator('.standing--you').waitFor({ state: 'visible' });
     const roundScore = await ann.page.locator('.myround strong').innerText();

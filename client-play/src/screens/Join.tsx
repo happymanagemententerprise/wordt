@@ -4,7 +4,10 @@ import type { GameApi } from '../game';
 
 export function Join({ game }: { game: GameApi }): ReactNode {
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get('room');
+    return fromUrl ? fromUrl.trim().toUpperCase() : '';
+  });
   const [pending, setPending] = useState<'create' | 'join' | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
