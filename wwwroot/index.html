@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WORDT - Multiplayer Letter Risk Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Animations & Styles */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(56, 189, 248, 0.6); }
+        }
+        .animate-glow {
+            animation: pulse-glow 3s infinite;
+        }
+        .tile-pop {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 font-sans antialiased bg-slate-950 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center font-extrabold text-2xl text-slate-950 shadow-lg shadow-brand-500/20">
+                    W
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">WORDT</h1>
+                    <p class="text-xs text-slate-400 font-medium hidden sm:block">Multiplayer Letter Risk Game</p>
+                </div>
+            </div>
+            
+            <div id="role-selector" class="flex items-center space-x-2 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+                <button onclick="switchRole('host')" id="btn-role-host" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 bg-brand-500 text-slate-950 shadow">
+                    <i class="fa-solid font-bold fa-tv mr-1"></i> Host Display
+                </button>
+                <button onclick="switchRole('player')" id="btn-role-player" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-mobile-screen mr-1"></i> Phone View
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        
+        <!-- ================================================================================= -->
+        <!-- HOST SCREEN (LAPTOP / TV DISPLAY) -->
+        <!-- ================================================================================= -->
+        <section id="host-view" class="w-full max-w-5xl mx-auto space-y-6">
+            
+            <!-- HOST LOBBY PHASE -->
+            <div id="host-lobby-phase" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden animate-glow">
+                <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="space-y-6 text-left">
+                        <div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20 mb-3">
+                                <i class="fa-solid fa-wifi mr-2"></i> Local Game Room Ready
+                            </span>
+                            <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Join the Match</h2>
+                            <p class="text-slate-400 text-sm mt-2 leading-relaxed">Scan the QR code with your phone camera or connect using the local web address. Up to 8 players can join the letter risk drafting pool!</p>
+                        </div>
+
+                        <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 uppercase tracking-wider font-bold">Room Access URL</p>
+                                <p id="host-url-display" class="font-mono text-sm text-brand-400 font-semibold mt-0.5">http://192.168.1.100:5000</p>
+                            </div>
+                            <button onclick="copyRoomLink()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition">
+                                <i class="fa-regular fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+
+                        <div class="pt-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-bold text-slate-300">Joined Players (<span id="host-player-count">0</span>/8)</span>
+                                <span class="text-xs text-emerald-400 font-semibold animate-pulse"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Live Connection</span>
+                            </div>
+                            <div id="host-player-list" class="flex flex-wrap gap-2 min-h-[48px] p-2 bg-slate-950/40 rounded-xl border border-slate-800/80">
+                                <p class="text-xs text-slate-600 italic m-auto">Waiting for players to join...</p>
+                            </div>
+                        </div>
+
+                        <button onclick="hostStartDrafting()" id="btn-start-draft" class="w-full py-4 bg-gradient-to-r from-brand-500 to-emerald-400 hover:from-brand-600 hover:to-emerald-500 text-slate-950 font-extrabold text-lg rounded-xl shadow-lg shadow-brand-500/20 transition-all transform active:scale-[0.99]">
+                            Start 7-Letter Draft <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center p-6 bg-slate-950/80 rounded-2xl border border-slate-800 shadow-inner">
+                        <div id="qrcode-container" class="bg-white p-4 rounded-xl shadow-xl flex items-center justify-center"></div>
+                        <p class="text-xs text-slate-400 mt-4 font-medium flex items-center">
+                            <i class="fa-solid fa-qrcode text-brand-400 mr-2"></i> Point phone camera to open controller
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HOST ACTIVE GAME & POOL PHASE -->
+            <div id="host-game-phase" class="hidden space-y-6">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <span class="text-xs font-bold text-brand-400 uppercase tracking-widest">Phase 2: Word Construction</span>
+                        <h2 class="text-2xl font-black text-white mt-1">Shared Global Letter Pool</h2>
+                        <p class="text-xs text-slate-400 mt-1">Points assigned based on total player selections (Rarest = 5 pts, Most common = 1 pt)</p>
+                    </div>
+
+                    <div class="flex items-center space-x-6 bg-slate-950 px-6 py-3 rounded-2xl border border-slate-800">
+                        <div class="text-center">
+                            <span class="text-[10px] text-slate-500 font-extrabold uppercase">Match Timer</span>
+                            <div id="host-timer" class="text-3xl font-black font-mono text-emerald-400">02:00</div>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <button onclick="forceEndGame()" class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold text-xs rounded-xl transition">
+                            <i class="fa-solid fa-flag-checkered mr-1"></i> Finish Game
+                        </button>
+                    </div>
+                </div>
+
+                <div id="host-pool-grid" class="grid grid-cols-4 sm:grid-cols-7 gap-3 sm:gap-4">
+                    <!-- Letter tiles inserted dynamically -->
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-400">Submissions Status: <strong id="host-submitted-count" class="text-white">0/0</strong> Players submitted</span>
+                    <div id="host-submission-pills" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <!-- HOST LEADERBOARD PHASE -->
+            <div id="host-leaderboard-phase" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center space-y-6">
+                <div class="inline-flex p-4 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-4xl mb-2">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-white">Final Leaderboard</h2>
+                <div id="host-leaderboard-list" class="max-w-md mx-auto space-y-3">
+                    <!-- Leaderboard entries injected dynamically -->
+                </div>
+                <button onclick="resetWholeGame()" class="px-6 py-3 bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold rounded-xl shadow-lg transition">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Start New Match
+                </button>
+            </div>
+        </section>
+
+        <!-- ================================================================================= -->
+        <!-- MOBILE PLAYER CONTROLLER (SMARTPHONE VIEW) -->
+        <!-- ================================================================================= -->
+        <section id="player-view" class="w-full max-w-md mx-auto space-y-5 hidden">
+            
+            <!-- PLAYER JOIN STEP -->
+            <div id="player-join-step" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
+                <div class="text-center space-y-1">
+                    <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-xl mx-auto mb-3">
+                        <i class="fa-solid fa-gamepad"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-white">Player Controller</h2>
+                    <p class="text-xs text-slate-400">Enter your nickname to join the active room</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Your Name</label>
+                        <input type="text" id="player-name-input" placeholder="e.g. WordMaster" maxlength="12" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold placeholder-slate-600 focus:outline-none focus:border-brand-500 text-center text-lg">
+                    </div>
+                    <button onclick="playerJoinRoom()" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                        Connect to Room
+                    </button>
+                </div>
+            </div>
+
+            <!-- PLAYER DRAFT STEP (7 UNIQUE LETTERS) -->
+            <div id="player-draft-step" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase text-brand-400 tracking-wider">Step 1 of 2</span>
+                        <h3 class="text-lg font-bold text-white">Secret 7-Letter Selection</h3>
+                    </div>
+                    <span id="player-draft-counter" class="px-2.5 py-1 bg-slate-800 text-brand-400 text-xs font-extrabold rounded-lg">0/7</span>
+                </div>
+
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Type or tap 7 unique letters. Overlapping choices made by opponents increase letter availability but reduce point yield!
+                </p>
+
+                <!-- Real Native Touch Keyboard Target Input -->
+                <div>
+                    <input type="text" id="player-native-input" placeholder="TAP OR TYPE HERE" maxlength="7" autocomplete="off" spellcheck="false" class="w-full px-4 py-3 bg-slate-950 border border-brand-500/40 rounded-xl text-white font-extrabold tracking-widest text-center text-xl uppercase focus:outline-none focus:border-brand-400 shadow-inner">
+                </div>
+
+                <!-- On-Screen Keyboard -->
+                <div id="virtual-keyboard" class="grid grid-cols-7 gap-1.5 pt-2">
+                    <!-- Dynamically generated keys -->
+                </div>
+
+                <button onclick="playerSubmitDraft()" id="btn-submit-draft" disabled class="w-full py-3.5 bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-600 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                    Lock In Secret Letters
+                </button>
+            </div>
+
+            <!-- PLAYER WORD PHASE STEP -->
+            <div id="player-words-step" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                        <span class="text-[10px] font-extrabold uppercase text-emerald-400 tracking-wider">Step 2 of 2</span>
+                        <h3 class="text-lg font-bold text-white">Construct Words</h3>
+                    </div>
+                    <span id="player-words-timer" class="px-2.5 py-1 bg-slate-950 border border-slate-800 text-emerald-400 font-mono text-sm font-bold rounded-lg">02:00</span>
+                </div>
+
+                <!-- Live Pool Quick Reference Bar -->
+                <div>
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Available Pool Letters & Values</span>
+                    <div id="player-pool-bar" class="flex flex-wrap gap-1.5 p-2 bg-slate-950 rounded-xl border border-slate-800 min-h-[44px]"></div>
+                </div>
+
+                <!-- Scratchpad Input -->
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Enter Word Candidate</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="player-word-input" placeholder="Type a word..." class="flex-grow px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold uppercase text-sm focus:outline-none focus:border-brand-500">
+                            <button onclick="addWordCandidate()" class="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs rounded-xl transition">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scratchpad List -->
+                    <div id="player-word-list" class="space-y-1.5 max-h-48 overflow-y-auto p-2 bg-slate-950/60 rounded-xl border border-slate-800/80 min-h-[80px]">
+                        <p class="text-xs text-slate-600 text-center py-4">No words added to scratchpad yet.</p>
+                    </div>
+                </div>
+
+                <button onclick="playerSubmitFinalWords()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-slate-950 font-extrabold rounded-xl shadow-lg transition">
+                    Submit Final Words <i class="fa-solid fa-paper-plane ml-1"></i>
+                </button>
+            </div>
+
+            <!-- PLAYER WAITING STEP -->
+            <div id="player-wait-step" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center space-y-4">
+                <div class="w-12 h-12 bg-brand-500/10 text-brand-400 rounded-full flex items-center justify-center text-xl mx-auto animate-spin">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+                <h3 id="player-wait-title" class="text-xl font-bold text-white">Letters Locked In!</h3>
+                <p id="player-wait-desc" class="text-xs text-slate-400 leading-relaxed">Waiting for all players to finish or timer to expire. Look at the main Host screen for updates.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950/80 py-3 text-center text-xs text-slate-600">
+        WORDT Risk Engine &bull; Shared Scrabble Rarity Scaling System
+    </footer>
+
+    <script>
+        // GLOBAL GAME STATE ENGINE
+        const GameState = {
+            role: 'host', // 'host' or 'player'
+            roomCode: 'WORDT',
+            phase: 'LOBBY', // 'LOBBY', 'DRAFT', 'WORDS', 'RESULTS'
+            players: [
+                { id: 'p1', name: 'Alex', letters: [], words: [], score: 0 },
+                { id: 'p2', name: 'Sam', letters: [], words: [], score: 0 }
+            ],
+            currentPlayerId: null,
+            timerSeconds: 120,
+            timerInterval: null,
+            letterCounts: {},
+            letterPoints: {},
+            playerDraft: new Set(),
+            wordCandidates: []
+        };
+
+        // INITIALIZATION
+        window.onload = function() {
+            generateQRCode();
+            renderVirtualKeyboard();
+            updateHostLobbyUI();
+            
+            // Sync Native Input on Mobile
+            const nativeInput = document.getElementById('player-native-input');
+            nativeInput.addEventListener('input', (e) => {
+                const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                GameState.playerDraft = new Set(val.split('').slice(0, 7));
+                e.target.value = Array.from(GameState.playerDraft).join('');
+                updateDraftUI();
+            });
+        };
+
+        // SWITCH BETWEEN HOST DISPLAY AND PHONE CONTROLLER
+        function switchRole(role) {
+            GameState.role = role;
+            const hostBtn = document.getElementById('btn-role-host');
+            const playerBtn = document.getElementById('btn-role-player');
+            const hostView = document.getElementById('host-view');
+            const playerView = document.getElementById('player-view');
+
+            if (role === 'host') {
+                hostBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 bg-brand-500 text-slate-950 shadow";
+                playerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+                hostView.classList.remove('hidden');
+                playerView.classList.add('hidden');
+            } else {
+                playerBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 bg-brand-500 text-slate-950 shadow";
+                hostBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+                playerView.classList.remove('hidden');
+                hostView.classList.add('hidden');
+            }
+        }
+
+        // GENERATE QR CODE FOR MOBILE JOINING
+        function generateQRCode() {
+            const container = document.getElementById("qrcode-container");
+            container.innerHTML = "";
+            const currentUrl = window.location.href;
+            document.getElementById('host-url-display').innerText = currentUrl;
+
+            new QRCode(container, {
+                text: currentUrl,
+                width: 160,
+                height: 160,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        function copyRoomLink() {
+            const url = document.getElementById('host-url-display').innerText;
+            navigator.clipboard.writeText(url);
+            alert("Room URL copied to clipboard!");
+        }
+
+        // HOST LOBBY LOGIC
+        function updateHostLobbyUI() {
+            const list = document.getElementById('host-player-list');
+            const count = document.getElementById('host-player-count');
+            count.innerText = GameState.players.length;
+
+            if (GameState.players.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-600 italic m-auto">Waiting for players to join...</p>`;
+                return;
+            }
+
+            list.innerHTML = GameState.players.map(p => `
+                <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-200 border border-slate-700 tile-pop">
+                    <i class="fa-solid fa-user-ninja mr-1.5 text-brand-400"></i> ${p.name}
+                </span>
+            `).join('');
+        }
+
+        function hostStartDrafting() {
+            if (GameState.players.length < 1) {
+                alert("At least 1 player is required to start!");
+                return;
+            }
+            GameState.phase = 'DRAFT';
+            document.getElementById('host-lobby-phase').classList.add('hidden');
+            document.getElementById('host-game-phase').classList.remove('hidden');
+            renderHostPoolGrid();
+            
+            // Auto switch player view if in simulator mode
+            if (!GameState.currentPlayerId) {
+                GameState.currentPlayerId = GameState.players[0].id;
+            }
+            showPlayerStep('player-draft-step');
+        }
+
+        function calculatePoolAndPoints() {
+            GameState.letterCounts = {};
+            GameState.letterPoints = {};
+
+            // Accumulate choices across all players
+            GameState.players.forEach(p => {
+                p.letters.forEach(ch => {
+                    GameState.letterCounts[ch] = (GameState.letterCounts[ch] || 0) + 1;
+                });
+            });
+
+            const keys = Object.keys(GameState.letterCounts);
+            if (keys.length === 0) return;
+
+            const counts = Object.values(GameState.letterCounts);
+            const maxPick = Math.max(...counts);
+            const minPick = Math.min(...counts);
+
+            // Inverted Scaling: Rarest letter = 5 points, Most picked = 1 point
+            keys.forEach(ch => {
+                const count = GameState.letterCounts[ch];
+                if (maxPick === minPick) {
+                    GameState.letterPoints[ch] = 3;
+                } else {
+                    const norm = (count - minPick) / (maxPick - minPick);
+                    GameState.letterPoints[ch] = Math.round(5 - (4 * norm));
+                }
+            });
+        }
+
+        function renderHostPoolGrid() {
+            const grid = document.getElementById('host-pool-grid');
+            calculatePoolAndPoints();
+            
+            const entries = Object.entries(GameState.letterPoints);
+            if (entries.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 italic">Waiting for players to submit secret letters...</div>`;
+                return;
+            }
+
+            grid.innerHTML = entries.map(([letter, pts]) => {
+                const count = GameState.letterCounts[letter];
+                return `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-between shadow-lg tile-pop">
+                        <span class="text-2xl font-black text-amber-400">${letter}</span>
+                        <div class="flex items-center justify-between w-full mt-2 pt-2 border-t border-slate-800/80 text-[10px]">
+                            <span class="text-slate-500 font-bold">${count}x picked</span>
+                            <span class="px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400 font-extrabold">${pts} pts</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // PLAYER CONTROLLER LOGIC
+        function playerJoinRoom() {
+            const nameInput = document.getElementById('player-name-input');
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert("Please enter a player name!");
+                return;
+            }
+
+            const id = 'p_' + Date.now();
+            const newPlayer = { id, name, letters: [], words: [], score: 0 };
+            GameState.players.push(newPlayer);
+            GameState.currentPlayerId = id;
+
+            updateHostLobbyUI();
+
+            if (GameState.phase === 'DRAFT') {
+                showPlayerStep('player-draft-step');
+            } else {
+                showPlayerStep('player-wait-step');
+                document.getElementById('player-wait-title').innerText = "Connected to Room!";
+                document.getElementById('player-wait-desc').innerText = "Waiting for the host to start the drafting phase.";
+            }
+        }
+
+        function renderVirtualKeyboard() {
+            const kb = document.getElementById('virtual-keyboard');
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+            kb.innerHTML = alphabet.map(char => `
+                <button onclick="toggleDraftLetter('${char}')" id="key-${char}" class="py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-sm rounded-lg transition active:scale-95">
+                    ${char}
+                </button>
+            `).join('');
+        }
+
+        function toggleDraftLetter(char) {
+            if (GameState.playerDraft.has(char)) {
+                GameState.playerDraft.delete(char);
+            } else {
+                if (GameState.playerDraft.size >= 7) return;
+                GameState.playerDraft.add(char);
+            }
+            document.getElementById('player-native-input').value = Array.from(GameState.playerDraft).join('');
+            updateDraftUI();
+        }
+
+        function updateDraftUI() {
+            const counter = document.getElementById('player-draft-counter');
+            const submitBtn = document.getElementById('btn-submit-draft');
+            const size = GameState.playerDraft.size;
+
+            counter.innerText = `${size}/7`;
+            submitBtn.disabled = size !== 7;
+
+            // Highlight virtual keyboard keys
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('').forEach(char => {
+                const btn = document.getElementById(`key-${char}`);
+                if (btn) {
+                    if (GameState.playerDraft.has(char)) {
+                        btn.className = "py-2 bg-brand-500 text-slate-950 font-extrabold text-sm rounded-lg shadow-md";
+                    } else {
+                        btn.className = "py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-sm rounded-lg transition active:scale-95";
+                    }
+                }
+            });
+        }
+
+        function playerSubmitDraft() {
+            if (GameState.playerDraft.size !== 7) return;
+
+            const player = GameState.players.find(p => p.id === GameState.currentPlayerId);
+            if (player) {
+                player.letters = Array.from(GameState.playerDraft);
+            }
+
+            showPlayerStep('player-wait-step');
+            document.getElementById('player-wait-title').innerText = "Letters Submitted!";
+            document.getElementById('player-wait-desc').innerText = "Your 7 secret letters are locked in. Check the host screen for the global pool calculation.";
+
+            renderHostPoolGrid();
+            checkAllDraftsComplete();
+        }
+
+        function checkAllDraftsComplete() {
+            const allDone = GameState.players.every(p => p.letters.length === 7);
+            if (allDone && GameState.players.length > 0) {
+                startWordPhase();
+            }
+        }
+
+        function startWordPhase() {
+            GameState.phase = 'WORDS';
+            renderHostPoolGrid();
+            startTimer(120);
+
+            // Populate player pool reference bar
+            const bar = document.getElementById('player-pool-bar');
+            bar.innerHTML = Object.entries(GameState.letterPoints).map(([letter, pts]) => `
+                <span class="px-2 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-amber-400 flex items-center gap-1">
+                    ${letter} <small class="text-[9px] text-brand-400 font-extrabold">${pts}p</small>
+                </span>
+            `).join('');
+
+            showPlayerStep('player-words-step');
+        }
+
+        function addWordCandidate() {
+            const input = document.getElementById('player-word-input');
+            const word = input.value.trim().toUpperCase();
+            if (!word) return;
+
+            // Validate against global pool
+            const pool = GameState.letterPoints;
+            const isValid = word.split('').every(ch => pool.hasOwnProperty(ch));
+
+            let pts = 0;
+            if (isValid) {
+                pts = word.split('').reduce((acc, ch) => acc + (pool[ch] || 0), 0);
+            }
+
+            GameState.wordCandidates.push({ word, isValid, pts });
+            input.value = '';
+            renderScratchpad();
+        }
+
+        function removeWordCandidate(index) {
+            GameState.wordCandidates.splice(index, 1);
+            renderScratchpad();
+        }
+
+        function renderScratchpad() {
+            const list = document.getElementById('player-word-list');
+            if (GameState.wordCandidates.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-600 text-center py-4">No words added to scratchpad yet.</p>`;
+                return;
+            }
+
+            list.innerHTML = GameState.wordCandidates.map((item, idx) => `
+                <div class="flex items-center justify-between p-2 rounded-lg ${item.isValid ? 'bg-slate-900 border border-emerald-500/30' : 'bg-rose-950/30 border border-rose-500/30'}">
+                    <div class="flex items-center gap-2">
+                        <span class="font-extrabold text-sm ${item.isValid ? 'text-white' : 'text-rose-400 line-through'}">${item.word}</span>
+                        ${item.isValid 
+                            ? `<span class="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 font-extrabold text-[10px] rounded">+${item.pts} pts</span>`
+                            : `<span class="text-[10px] text-rose-400 font-bold"><i class="fa-solid fa-circle-exclamation"></i> Invalid letters</span>`
+                        }
+                    </div>
+                    <button onclick="removeWordCandidate(${idx})" class="text-xs text-slate-500 hover:text-rose-400 p-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function playerSubmitFinalWords() {
+            const validWords = GameState.wordCandidates.filter(w => w.isValid);
+            const totalScore = validWords.reduce((acc, w) => acc + w.pts, 0);
+
+            const player = GameState.players.find(p => p.id === GameState.currentPlayerId);
+            if (player) {
+                player.words = validWords.map(w => w.word);
+                player.score = totalScore;
+            }
+
+            showPlayerStep('player-wait-step');
+            document.getElementById('player-wait-title').innerText = "Words Submitted!";
+            document.getElementById('player-wait-desc').innerText = `You submitted ${validWords.length} valid words for a score of ${totalScore} points! Waiting for match finish.`;
+
+            updateSubmissionStatus();
+        }
+
+        function updateSubmissionStatus() {
+            const finished = GameState.players.filter(p => p.score > 0 || p.words.length > 0).length;
+            const total = GameState.players.length;
+            document.getElementById('host-submitted-count').innerText = `${finished}/${total}`;
+
+            if (finished === total && total > 0) {
+                forceEndGame();
+            }
+        }
+
+        // TIMER & MATCH CONCLUSION
+        function startTimer(seconds) {
+            clearInterval(GameState.timerInterval);
+            GameState.timerSeconds = seconds;
+
+            GameState.timerInterval = setInterval(() => {
+                GameState.timerSeconds--;
+                const mins = String(Math.floor(GameState.timerSeconds / 60)).padStart(2, '0');
+                const secs = String(GameState.timerSeconds % 60).padStart(2, '0');
+                
+                const display = `${mins}:${secs}`;
+                document.getElementById('host-timer').innerText = display;
+                document.getElementById('player-words-timer').innerText = display;
+
+                if (GameState.timerSeconds <= 0) {
+                    clearInterval(GameState.timerInterval);
+                    forceEndGame();
+                }
+            }, 1000);
+        }
+
+        function forceEndGame() {
+            clearInterval(GameState.timerInterval);
+            GameState.phase = 'RESULTS';
+
+            document.getElementById('host-game-phase').classList.add('hidden');
+            document.getElementById('host-leaderboard-phase').classList.remove('hidden');
+
+            const leaderboard = GameState.players.slice().sort((a, b) => b.score - a.score);
+            const list = document.getElementById('host-leaderboard-list');
+
+            list.innerHTML = leaderboard.map((p, idx) => `
+                <div class="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl shadow-md tile-pop">
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-sm ${idx === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300'}">
+                            #${idx + 1}
+                        </span>
+                        <span class="font-bold text-white text-base">${p.name}</span>
+                    </div>
+                    <span class="text-xl font-black text-amber-400">${p.score} <small class="text-xs text-slate-500 font-bold">PTS</small></span>
+                </div>
+            `).join('');
+        }
+
+        function resetWholeGame() {
+            GameState.phase = 'LOBBY';
+            GameState.players.forEach(p => { p.letters = []; p.words = []; p.score = 0; });
+            GameState.playerDraft.clear();
+            GameState.wordCandidates = [];
+
+            document.getElementById('host-leaderboard-phase').classList.add('hidden');
+            document.getElementById('host-lobby-phase').classList.remove('hidden');
+            showPlayerStep('player-join-step');
+            updateHostLobbyUI();
+        }
+
+        // HELPER UTILS
+        function showPlayerStep(stepId) {
+            const steps = ['player-join-step', 'player-draft-step', 'player-words-step', 'player-wait-step'];
+            steps.forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(stepId).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
