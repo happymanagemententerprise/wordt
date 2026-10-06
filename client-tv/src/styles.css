@@ -606,8 +606,208 @@ h2 {
   color: var(--accent);
 }
 
+/* -------------------------------------------------------------------- teams */
+
+.tv-team--A {
+  box-shadow: inset 6px 0 0 #7dd3fc;
+}
+
+.tv-team--B {
+  box-shadow: inset 6px 0 0 #ff8fab;
+}
+
+.tv-standing__members {
+  display: block;
+  font-size: 0.65em;
+  font-weight: 600;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-team-tag {
+  margin-left: 0.5em;
+  padding: 0.1em 0.5em;
+  border-radius: 6px;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tv-team-tag--A {
+  background: rgba(125, 211, 252, 0.18);
+  color: #7dd3fc;
+}
+
+.tv-team-tag--B {
+  background: rgba(255, 143, 171, 0.18);
+  color: #ff8fab;
+}
+
+.tv-lobby__teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+.tv-lobby__team {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.tv-team-name {
+  margin: 0;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- pick bar */
+
+.tv-pick__bar {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.tv-pick__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+
+.tv-pick__letters {
+  font-size: clamp(1rem, 1.4vw, 1.5rem);
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------- words board */
+
+.tv-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  gap: clamp(1rem, 2vw, 2rem);
+  align-items: start;
+}
+
+.tv-board {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 2rem);
+  min-width: 0;
+}
+
+.tv-feed {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  padding: clamp(0.75rem, 1.2vw, 1.25rem);
+  max-height: 62vh;
+  overflow: auto;
+}
+
+.tv-feed__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tv-feed__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.tv-feed__item--new {
+  border-color: var(--accent);
+  animation: tv-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.tv-feed__word {
+  font-weight: 800;
+  font-size: clamp(1.2rem, 2vw, 2rem);
+  color: var(--accent);
+}
+
+.tv-feed__who {
+  color: var(--muted);
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-feed__points {
+  color: var(--good);
+  font-weight: 800;
+}
+
+.tv-writer__count--pop {
+  display: inline-block;
+  animation: tv-pop 0.35s ease;
+}
+
+.tv-countdown--urgent {
+  animation: tv-pulse 1s ease-in-out infinite;
+}
+
+@keyframes tv-pop {
+  0% {
+    transform: scale(0.65);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes tv-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@media (max-width: 78rem) {
+  .tv-lobby__teams {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 70rem) {
   .tv-stage--lobby {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tv-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tv-feed {
+    position: static;
+    max-height: none;
   }
 }

@@ -4,13 +4,10 @@ import type { PublicRoomState, ReviewStep } from '@wordt/shared';
 
 import { Standings } from '../ui';
 
-function winnerNames(step: Extract<ReviewStep, { kind: 'stat' }>, state: PublicRoomState): string {
-  return step.award.winners
-    .map((id) => state.players.find((player) => player.id === id)?.name ?? id)
-    .join(', ');
-}
-
 function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): ReactNode {
+  const memberNames = (id: string) =>
+    state.players.filter((player) => player.teamId === id).map((player) => player.name).join(' · ') || null;
+
   switch (step.kind) {
     case 'unique_word':
       return (
@@ -18,7 +15,7 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
           <p className="tv-eyebrow">Found by one player only</p>
           <p className="tv-reveal__word">{step.word}</p>
           <p className="tv-reveal__who">
-            {step.playerName} <span className="tv-reveal__points">+{step.points}</span>
+            {step.credit} <span className="tv-reveal__points">+{step.points}</span>
           </p>
         </div>
       );
@@ -35,18 +32,33 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
           <p className="tv-eyebrow">+{step.award.points} points</p>
           <p className="tv-reveal__word">{step.award.label}</p>
           <p className="tv-reveal__who">
-            {winnerNames(step, state)} <span className="tv-reveal__points">· {String(step.award.value)}</span>
+            {step.award.credit || 'shared too evenly'}
+            <span className="tv-reveal__points"> · {String(step.award.value)}</span>
           </p>
         </div>
       );
+    case 'draft_penalty': {
+      const total = step.entries.reduce((sum, entry) => sum + entry.points, 0);
+      return (
+        <div className="tv-reveal">
+          <p className="tv-eyebrow">Draft penalty</p>
+          <p className="tv-reveal__word">{total}</p>
+          <p className="tv-reveal__who">
+            {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
+          </p>
+        </div>
+      );
+    }
     case 'leaderboard':
-      return <Standings players={state.players} />;
+      return <Standings players={state.standings} teamLabel={memberNames} />;
   }
 }
 
 export function Review({ state }: { state: PublicRoomState }): ReactNode {
   const step = state.reviewSteps[state.reviewIndex];
   const revealed = state.reviewIndex + 1;
+  const memberNames = (id: string) =>
+    state.players.filter((player) => player.teamId === id).map((player) => player.name).join(' · ') || null;
 
   return (
     <section className="tv-stage tv-stage--review">
@@ -71,7 +83,7 @@ export function Review({ state }: { state: PublicRoomState }): ReactNode {
         ) : null}
       </header>
 
-      {step ? <Reveal step={step} state={state} /> : <Standings players={state.players} />}
+      {step ? <Reveal step={step} state={state} /> : <Standings players={state.standings} teamLabel={memberNames} />}
     </section>
   );
 }

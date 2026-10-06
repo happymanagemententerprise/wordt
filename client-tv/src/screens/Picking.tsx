@@ -22,15 +22,33 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
       </p>
 
       <ul className="tv-picks">
-        {state.players.map((player) => (
-          <li key={player.id} className={`tv-pick${player.pickedLocked ? ' tv-pick--locked' : ''}`}>
-            <span className="tv-pick__name">{player.name}</span>
-            <span className="tv-pick__count">
-              {player.pickCount}/{state.pickLimit}
-            </span>
-            <span className="tv-pick__state">{player.pickedLocked ? 'Locked in' : 'Picking…'}</span>
-          </li>
-        ))}
+        {state.players.map((player) => {
+          const percent = state.pickLimit === 0 ? 0 : Math.round((player.pickCount / state.pickLimit) * 100);
+          const isTeam = player.teamId === player.id;
+          return (
+            <li
+              key={player.id}
+              className={`tv-pick${player.pickedLocked ? ' tv-pick--locked' : ''}${
+                !isTeam && player.teamId ? ` tv-team--${player.teamId}` : ''
+              }`}
+            >
+              <span className="tv-pick__name">
+                {player.name}
+                {!isTeam && player.teamId ? (
+                  <span className={`tv-team-tag tv-team-tag--${player.teamId}`}>{player.teamId}</span>
+                ) : null}
+              </span>
+              <span className="tv-pick__bar">
+                <span className="tv-pick__bar-fill" style={{ width: `${percent}%` }} />
+              </span>
+              <span className="tv-pick__count">
+                {player.pickCount}/{state.pickLimit}
+              </span>
+              <span className="tv-pick__letters">{player.pick.join(' ') || '—'}</span>
+              <span className="tv-pick__state">{player.pickedLocked ? 'Locked in' : 'Picking…'}</span>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

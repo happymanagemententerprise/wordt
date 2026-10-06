@@ -46,25 +46,42 @@ export function phaseLabel(phase: Phase): string {
   return PHASE_LABELS[phase] ?? phase;
 }
 
-export function Standings({ players, showStats }: { players: PublicPlayer[]; showStats?: boolean }): ReactNode {
+export function Standings({
+  players,
+  teamLabel,
+  showStats = false,
+}: {
+  players: PublicPlayer[];
+  /** For a team row ("A"/"B"), the names of its members. */
+  teamLabel?: (id: string) => string | null;
+  showStats?: boolean;
+}): ReactNode {
   return (
     <ol className="tv-standings">
-      {players.map((player, index) => (
-        <li key={player.id} className="tv-standing">
-          <span className="tv-standing__rank">{index + 1}</span>
-          <span className="tv-standing__name">
-            {player.name}
-            {player.isHost ? <span className="tv-tag">host</span> : null}
-            {!player.connected ? <span className="tv-tag tv-tag--away">offline</span> : null}
-          </span>
-          {showStats ? (
-            <span className="tv-standing__stats">
-              {player.validWordCount} words · {player.totalTries - player.wrongTries}/{player.totalTries || 0} correct
+      {players.map((player, index) => {
+        const isTeam = player.teamId === player.id;
+        const members = isTeam && teamLabel ? teamLabel(player.id) : null;
+        return (
+          <li
+            key={player.id}
+            className={`tv-standing${isTeam ? ` tv-team--${player.teamId}` : ''}`}
+          >
+            <span className="tv-standing__rank">{index + 1}</span>
+            <span className="tv-standing__name">
+              {player.name}
+              {player.isHost ? <span className="tv-tag">host</span> : null}
+              {!player.connected ? <span className="tv-tag tv-tag--away">offline</span> : null}
+              {members ? <span className="tv-standing__members">{members}</span> : null}
             </span>
-          ) : null}
-          <span className="tv-standing__score">{player.score}</span>
-        </li>
-      ))}
+            {showStats ? (
+              <span className="tv-standing__stats">
+                {player.validWordCount} words · {player.totalTries - player.wrongTries}/{player.totalTries || 0} correct
+              </span>
+            ) : null}
+            <span className="tv-standing__score">{player.score}</span>
+          </li>
+        );
+      })}
     </ol>
   );
 }
