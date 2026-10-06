@@ -13,12 +13,22 @@ export function Join({ game }: { game: GameApi }): ReactNode {
 
   const trimmedName = name.trim();
   const trimmedCode = code.trim().toUpperCase();
-  const canCreate = trimmedName.length > 0 && pending === null;
-  const canJoin = canCreate && trimmedCode.length >= 4;
+  const pendingNow = pending !== null;
 
   const run = async (action: 'create' | 'join') => {
-    if (action === 'create' ? !canCreate : !canJoin) return;
+    if (pendingNow) return;
     setLocalError(null);
+
+    // Never disable the button: a tap has to answer back with what is missing.
+    if (!trimmedName) {
+      setLocalError('Enter your name first.');
+      return;
+    }
+    if (action === 'join' && trimmedCode.length < 4) {
+      setLocalError('Enter the five letter room code.');
+      return;
+    }
+
     setPending(action);
     try {
       const ack =
@@ -55,7 +65,10 @@ export function Join({ game }: { game: GameApi }): ReactNode {
         <input
           className="input"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => {
+            setName(event.target.value);
+            setLocalError(null);
+          }}
           placeholder="e.g. Sam"
           maxLength={16}
           autoComplete="nickname"
@@ -63,7 +76,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
       </label>
 
       <form className="stack" onSubmit={onCreate}>
-        <button className="btn btn--primary" type="submit" disabled={!canCreate}>
+        <button className="btn btn--primary" type="submit" disabled={pendingNow}>
           {pending === 'create' ? 'Working…' : 'Create a room'}
         </button>
       </form>
@@ -75,7 +88,10 @@ export function Join({ game }: { game: GameApi }): ReactNode {
         <input
           className="input input--code"
           value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          onChange={(event) => {
+            setCode(event.target.value.toUpperCase());
+            setLocalError(null);
+          }}
           placeholder="ABCDE"
           maxLength={5}
           autoCapitalize="characters"
@@ -85,7 +101,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
       </label>
 
       <form className="stack" onSubmit={onJoin}>
-        <button className="btn" type="submit" disabled={!canJoin}>
+        <button className="btn" type="submit" disabled={pendingNow}>
           {pending === 'join' ? 'Working…' : 'Join room'}
         </button>
       </form>
