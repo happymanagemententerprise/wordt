@@ -1,2 +1,6 @@
 bin/
 obj/
+dist/
+node_modules/
+*.local
+*.log
