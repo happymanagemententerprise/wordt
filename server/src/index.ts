@@ -293,7 +293,56 @@ io.on('connection', (socket: Socket) => {
     ack({ ok: true });
   });
 
-  on<Record<string, never>, ActionAck>(socket, 'review:next', (_payload, ack) => {
+  on<Record<string, never>, ActionAck>(socket, 'host:end', (_payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    if (ctx.entry.room.host?.id !== ctx.playerId) {
+      ack({ ok: false, error: 'Only the host can do that.' });
+      return;
+    }
+    if (!ctx.entry.room.endGame(ctx.playerId)) {
+      ack({ ok: false, error: 'There is no game running right now.' });
+      return;
+    }
+    ack({ ok: true });
+  });
+
+  on<{ enabled?: unknown }, ActionAck>(socket, 'host:teams', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    if (ctx.entry.room.host?.id !== ctx.playerId) {
+      ack({ ok: false, error: 'Only the host can do that.' });
+      return;
+    }
+    const enabled = Boolean(payload?.enabled);
+    if (!ctx.entry.room.setTeamsEnabled(ctx.playerId, enabled)) {
+      ack({ ok: false, error: 'Teams can only be changed in the lobby.' });
+      return;
+    }
+    ack({ ok: true });
+  });
+
+  on<{ teamId?: unknown }, ActionAck>(socket, 'team:set', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    const teamId = typeof payload?.teamId === 'string' ? payload.teamId : '';
+    if (!ctx.entry.room.setTeam(ctx.playerId, teamId)) {
+      ack({ ok: false, error: 'That team is full or teams are not open.' });
+      return;
+    }
+    ack({ ok: true });
+  });
+
+  on<Record<string, never>, ActionAck>(socket, 'review:next', (payload, ack) => {
     const ctx = requirePlayer(socket);
     if (!ctx.ok) {
       ack(ctx);

@@ -9,25 +9,34 @@ import {
   PICK_PHASE_SECONDS,
   ROUNDS,
   REVIEW_STEP_SECONDS,
+  TEAM_IDS,
+  TEAM_MAX_PLAYERS,
   VALUE_REVEAL_SECONDS,
   WORD_PHASE_SECONDS,
   computeLetterValues,
   countPick,
-  scoreRound,
-  validateWord,
+  lettersPerTeamMember,
+  mergeTeam,
   normalizeWord,
+  scoreRound,
+  teamName,
+  validateWord,
 } from '@wordt/shared';
 import type {
+  FeedItem,
   Letter,
   LetterValueTable,
   OwnState,
   Phase,
   PlayerId,
+  PublicPlayer,
   PublicRoomState,
+  PublicTeam,
   ReviewStep,
   RoundPlayerInput,
   RoundResult,
   StatAward,
+  TeamId,
   ValidationResult,
   WordCheckContext,
   WordRejection,
@@ -35,6 +44,9 @@ import type {
 import { loadDictionary } from '@wordt/shared/dictionary';
 
 const DICTIONARY = loadDictionary();
+
+/** Words the TV ticker remembers for its live feed. */
+const FEED_MAX = 10;
 
 /** Phase durations in seconds. Env vars exist only so demos and smoke tests can
  *  run faster than a real party would; the shared config stays the default. */
@@ -64,6 +76,7 @@ export interface RoomPlayer {
   connected: boolean;
   joinedAt: number;
   isHost: boolean;
+  teamId: TeamId | null;
   pick: Letter[];
   pickLocked: boolean;
   validWords: string[];
@@ -97,6 +110,8 @@ export class Room {
   reviewSteps: ReviewStep[] = [];
   reviewIndex = 0;
   pickLimit = LETTERS_PER_PLAYER_TWO;
+  teamsEnabled = false;
+  readonly feed: FeedItem[] = [];
 
   readonly players = new Map<PlayerId, RoomPlayer>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -141,6 +156,7 @@ export class Room {
       connected: true,
       joinedAt: Date.now(),
       isHost: this.players.size === 0,
+      teamId: this.teamsEnabled ? this.leastLoadedTeam() : null,
       pick: [],
       pickLocked: false,
       validWords: [],
@@ -235,8 +251,12 @@ export class Room {
     this.reviewSteps = [];
     this.reviewIndex = 0;
     this.letterValues = null;
-    this.pickLimit =
-      this.players.size >= 3 ? LETTERS_PER_PLAYER_MORE : LETTERS_PER_PLAYER_TWO;
+    this.feed.length = 0;
+    this.pickLimit = this.teamsEnabled
+      ? lettersPerTeamMember(TEAM_MAX_PLAYERS)
+      : this.players.size >= 3
+        ? LETTERS_PER_PLAYER_MORE
+        : LETTERS_PER_PLAYER_TWO;
 
     for (const player of this.players.values()) {
       player.pick = [];
@@ -259,6 +279,66 @@ export class Room {
     return true;
   }
 
+  /** Host may end the session at any point once the game has started. */
+  endGame(playerId: PlayerId): boolean {
+    if (this.host?.id !== playerId) return false;
+    if (this.phase === 'LOBBY' || this.phase === 'GAME_OVER') return false;
+
+    this.clearTimer();
+    this.phase = 'GAME_OVER';
+    this.phaseEndsAt = null;
+    this.notice = null;
+    this.reviewSteps = [];
+    this.reviewIndex = 0;
+    this.emitState();
+    this.emitOwn();
+    return true;
+  }
+
+  /** Host turns team play on or off from the lobby. */
+  setTeamsEnabled(playerId: PlayerId, enabled: boolean): boolean {
+    if (this.phase !== 'LOBBY') return false;
+    if (this.host?.id !== playerId) return false;
+    if (this.teamsEnabled === enabled) return true;
+
+    this.teamsEnabled = enabled;
+    for (const player of this.players.values()) {
+      player.teamId = enabled ? this.leastLoadedTeam() : null;
+    }
+
+    this.emitState();
+    this.emitOwn();
+    return true;
+  }
+
+  /** A player moves between teams while the lobby is open. */
+  setTeam(playerId: PlayerId, teamId: string): boolean {
+    if (this.phase !== 'LOBBY' || !this.teamsEnabled) return false;
+    if (!TEAM_IDS.includes(teamId as TeamId)) return false;
+
+    const player = this.players.get(playerId);
+    if (!player) return false;
+    if (player.teamId === teamId) return true;
+
+    const others = [...this.players.values()].filter(
+      (other) => other.id !== player.id && other.teamId === teamId,
+    );
+    if (others.length >= TEAM_MAX_PLAYERS) return false;
+
+    player.teamId = teamId as TeamId;
+    this.emitState();
+    this.emitOwn(playerId);
+    return true;
+  }
+
+  private leastLoadedTeam(): TeamId {
+    const counts: Record<string, number> = { A: 0, B: 0 };
+    for (const player of this.players.values()) {
+      if (player.teamId) counts[player.teamId] = (counts[player.teamId] ?? 0) + 1;
+    }
+    return (counts.A ?? 0) <= (counts.B ?? 0) ? 'A' : 'B';
+  }
+
   // ------------------------------------------------------------------ picks
 
   setPick(playerId: PlayerId, letters: Letter[]): void {
@@ -266,13 +346,35 @@ export class Room {
     const player = this.players.get(playerId);
     if (!player || player.pickLocked) return;
 
+    // Teammates split the team's letters, so they may never claim the same one.
+    const blocked = this.teammateLetters(player);
     const cleaned = [...new Set(letters.map((l) => String(l).toUpperCase()))]
-      .filter((l) => LETTER_POOL.includes(l))
-      .slice(0, this.pickLimit);
+      .filter((l) => LETTER_POOL.includes(l) && !blocked.has(l))
+      .slice(0, this.pickLimitFor(player));
 
     player.pick = cleaned;
     this.emitOwn(playerId);
     this.emitState();
+  }
+
+  /** Letters this player's teammates have already claimed. */
+  private teammateLetters(player: RoomPlayer): Set<string> {
+    const taken = new Set<string>();
+    if (!this.teamsEnabled || !player.teamId) return taken;
+    for (const other of this.players.values()) {
+      if (other.id === player.id || other.teamId !== player.teamId) continue;
+      for (const letter of other.pick) taken.add(letter);
+    }
+    return taken;
+  }
+
+  /** Letters each player drafts: a share of the team's total, or the room limit. */
+  private pickLimitFor(player: RoomPlayer): number {
+    if (!this.teamsEnabled || !player.teamId) return this.pickLimit;
+    const members = [...this.players.values()].filter(
+      (other) => other.teamId === player.teamId,
+    ).length;
+    return lettersPerTeamMember(members);
   }
 
   lockPick(playerId: PlayerId): boolean {
@@ -346,6 +448,7 @@ export class Room {
       player.validWords.push(word);
       player.totalTries += 1;
       player.lifetimeValidWords += 1;
+      this.pushFeed({ word, playerId, score });
       this.emitState();
       this.emitOwn(playerId);
       return { word, ok: true, score };
@@ -366,20 +469,20 @@ export class Room {
   private scoreAndReview(): void {
     const table = this.letterValues ?? { entries: [], values: {}, counts: {} };
 
-    const inputs: RoundPlayerInput[] = [...this.players.values()].map((player) => ({
-      id: player.id,
-      name: player.name,
-      validWords: [...player.validWords],
-      wrongTries: player.wrongTries,
-      totalTries: player.totalTries,
-    }));
-
+    const inputs = this.buildScoringInputs();
     const result = scoreRound({ players: inputs, letterValues: table.values });
     this.lastRoundResult = result;
 
     for (const entry of result.players) {
-      const player = this.players.get(entry.id);
-      if (player) player.score += entry.roundScore;
+      if (this.teamsEnabled) {
+        // A team's score lands on every member, so both always read the same.
+        for (const player of this.players.values()) {
+          if (player.teamId === entry.id) player.score += entry.roundScore;
+        }
+      } else {
+        const player = this.players.get(entry.id);
+        if (player) player.score += entry.roundScore;
+      }
     }
 
     this.reviewSteps = buildReviewSteps(result);
@@ -387,6 +490,48 @@ export class Room {
     this.setPhase('REVIEW', REVIEW_SECONDS, () => this.stepReview());
     this.emitState();
     this.emitOwn();
+  }
+
+  /**
+   * One scoring unit per player, or one per team when team play is on.
+   * Merging is what makes two teams score exactly like two players.
+   */
+  private buildScoringInputs(): RoundPlayerInput[] {
+    const toInput = (player: RoomPlayer): RoundPlayerInput => ({
+      id: player.id,
+      name: player.name,
+      validWords: [...player.validWords],
+      wrongTries: player.wrongTries,
+      totalTries: player.totalTries,
+      pick: [...player.pick],
+    });
+
+    if (!this.teamsEnabled) {
+      return [...this.players.values()].map(toInput);
+    }
+
+    const members = new Map<string, RoundPlayerInput[]>();
+    for (const player of this.players.values()) {
+      const teamId = player.teamId ?? TEAM_IDS[0];
+      const list = members.get(teamId);
+      if (list) list.push(toInput(player));
+      else members.set(teamId, [toInput(player)]);
+    }
+
+    return [...members.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([teamId, list]) => mergeTeam(teamId, list));
+  }
+
+  private pushFeed(item: Omit<FeedItem, 'playerName' | 'teamName'>): void {
+    const player = this.players.get(item.playerId);
+    if (!player) return;
+    this.feed.push({
+      ...item,
+      playerName: player.name,
+      teamName: player.teamId ? teamName(player.teamId) : null,
+    });
+    while (this.feed.length > FEED_MAX) this.feed.shift();
   }
 
   private stepReview(): void {
@@ -453,18 +598,20 @@ export class Room {
       name: player.name,
       isHost: player.isHost,
       pick: [...player.pick],
-      pickLimit: this.pickLimit,
+      pickLimit: this.pickLimitFor(player),
       pickedLocked: player.pickLocked,
       words: [...player.validWords],
       wordScores,
       wrongTries: player.wrongTries,
       totalTries: player.totalTries,
       score: player.score,
+      teamId: player.teamId,
+      teamName: player.teamId ? teamName(player.teamId) : null,
     };
   }
 
   publicState(): PublicRoomState {
-    const standings = [...this.players.values()]
+    const players: PublicPlayer[] = [...this.players.values()]
       .sort((a, b) => b.score - a.score || a.joinedAt - b.joinedAt)
       .map((player) => ({
         id: player.id,
@@ -477,7 +624,12 @@ export class Room {
         wrongTries: player.wrongTries,
         totalTries: player.totalTries,
         isHost: player.isHost,
+        teamId: player.teamId,
+        pick: [...player.pick],
       }));
+
+    const teams = this.teamsEnabled ? this.teamList() : null;
+    const standings = teams ? this.teamRows(teams) : players;
 
     const finalStandings =
       this.phase === 'GAME_OVER'
@@ -495,7 +647,7 @@ export class Room {
       round: this.round,
       roundCount: ROUNDS,
       phaseEndsAt: this.phaseEndsAt,
-      players: standings,
+      players,
       hostId: this.host?.id ?? null,
       letterValues: this.letterValues,
       usableLetterCount: this.letterValues?.entries.length ?? 0,
@@ -507,7 +659,56 @@ export class Room {
       notice: this.notice,
       reviewSteps: this.reviewSteps,
       reviewIndex: this.reviewIndex,
+      teamsEnabled: this.teamsEnabled,
+      teams,
+      standings,
+      feed: [...this.feed],
     };
+  }
+
+  /** Teams as one competitor each, in a stable A-then-B order. */
+  private teamList(): PublicTeam[] {
+    const groups = new Map<string, RoomPlayer[]>();
+    for (const player of this.players.values()) {
+      if (!player.teamId) continue;
+      const list = groups.get(player.teamId);
+      if (list) list.push(player);
+      else groups.set(player.teamId, [player]);
+    }
+
+    return [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, members]) => ({
+        id,
+        name: teamName(id),
+        score: Math.max(...members.map((member) => member.score)),
+        memberIds: members.map((member) => member.id),
+        connected: members.some((member) => member.connected),
+        validWordCount: members.reduce((sum, member) => sum + member.validWords.length, 0),
+        wrongTries: members.reduce((sum, member) => sum + member.wrongTries, 0),
+        totalTries: members.reduce((sum, member) => sum + member.totalTries, 0),
+        isHost: members.some((member) => member.isHost),
+      }));
+  }
+
+  /** Standings rows shaped like players so every list can render teams unchanged. */
+  private teamRows(teams: PublicTeam[]): PublicPlayer[] {
+    return [...teams]
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+      .map((team) => ({
+        id: team.id,
+        name: team.name,
+        connected: team.connected,
+        score: team.score,
+        pickCount: 0,
+        pickedLocked: false,
+        validWordCount: team.validWordCount,
+        wrongTries: team.wrongTries,
+        totalTries: team.totalTries,
+        isHost: team.isHost,
+        teamId: team.id,
+        pick: [],
+      }));
   }
 
   emitState(): void {
@@ -536,6 +737,7 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
       playerId: unique.playerId,
       playerName: unique.playerName,
       points: unique.points,
+      credit: unique.credit,
     });
   }
 
@@ -545,6 +747,10 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
 
   for (const award of result.statAwards) {
     steps.push({ kind: 'stat', award });
+  }
+
+  if (result.draftPenalties.length > 0) {
+    steps.push({ kind: 'draft_penalty', entries: result.draftPenalties });
   }
 
   steps.push({ kind: 'leaderboard' });
