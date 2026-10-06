@@ -262,7 +262,7 @@ class AwardTracker {
   record<T extends number | string>(
     spec: AwardSpec<T>,
     winners: PlayerId[],
-    value: T,
+    value: StatAward['value'],
   ): StatAward | null {
     if (winners.length === 0) return null;
 
@@ -341,7 +341,8 @@ function awardBestAccuracy(
       valueOf: (result) => result.accuracy ?? 0,
     },
     winners,
-    Math.round(bestAccuracy * 1000) / 10,
+    // Displayed verbatim by both clients, so it has to read as a real accuracy.
+    `${Math.round((1 - bestAccuracy) * 1000) / 10}% correct`,
   );
 }
 

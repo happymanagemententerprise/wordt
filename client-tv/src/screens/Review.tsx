@@ -35,7 +35,7 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
           <p className="tv-eyebrow">+{step.award.points} points</p>
           <p className="tv-reveal__word">{step.award.label}</p>
           <p className="tv-reveal__who">
-            {winnerNames(step, state)} <span className="tv-reveal__points">{String(step.award.value)}</span>
+            {winnerNames(step, state)} <span className="tv-reveal__points">· {String(step.award.value)}</span>
           </p>
         </div>
       );
