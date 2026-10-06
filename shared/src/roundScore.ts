@@ -259,10 +259,10 @@ class AwardTracker {
    * gives every tied player the full points; sharing off awards nobody,
    * because no single player won the stat outright.
    */
-  record(
-    spec: AwardSpec<number | string>,
+  record<T extends number | string>(
+    spec: AwardSpec<T>,
     winners: PlayerId[],
-    value: number | string,
+    value: T,
   ): StatAward | null {
     if (winners.length === 0) return null;
 

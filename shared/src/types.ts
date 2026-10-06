@@ -130,6 +130,13 @@ export interface RoomPlayer {
   joinedAt: number;
 }
 
+/** One step of the end-of-round result review, revealed on the TV in order. */
+export type ReviewStep =
+  | { kind: 'unique_word'; word: string; playerId: PlayerId; playerName: string; points: number }
+  | { kind: 'most_used_word'; words: string[] }
+  | { kind: 'stat'; award: StatAward }
+  | { kind: 'leaderboard' };
+
 export interface PublicPlayer {
   id: PlayerId;
   name: string;
@@ -161,6 +168,9 @@ export interface PublicRoomState {
   lastRoundResult: RoundResult | null;
   finalStandings: PublicPlayer[] | null;
   notice: string | null;
+  /** Only populated during REVIEW. */
+  reviewSteps: ReviewStep[];
+  reviewIndex: number;
 }
 
 /** Everything a phone client is allowed to see about its own seat. */
