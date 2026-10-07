@@ -12,7 +12,9 @@ export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNo
       <header className="tv-head">
         <div>
           <h2>Letter values</h2>
-          <p className="tv-hint">Rarer letters are worth more. Every usable letter scores.</p>
+          <p className="tv-hint">
+      Overlap letters get rarity prices (vowels stay cheap); computer-added letters sit at their Scrabble value.
+    </p>
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="left" />
       </header>

@@ -88,17 +88,20 @@ export function Standings({
 
 export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
   if (table.entries.length === 0) {
-    return <p className="tv-empty">No letter was picked twice, so there is nothing to score with.</p>;
+    return <p className="tv-empty">There are no usable letters this round.</p>;
   }
   return (
     <div className="tv-values">
-      {table.entries.map((entry) => (
-        <div key={entry.letter} className="tv-value">
-          <span className={`tv-value__letter lv-${Math.min(5, Math.max(1, entry.value))}`}>{entry.letter}</span>
-          <span className="tv-value__count">{entry.count} picked</span>
-          <span className="tv-value__points">{entry.value} pt</span>
-        </div>
-      ))}
+      {table.entries.map((entry) => {
+        const added = table.source[entry.letter] === 'added';
+        return (
+          <div key={entry.letter} className={`tv-value${added ? ' tv-value--added' : ''}`}>
+            <span className={`tv-value__letter lv-${Math.min(5, Math.max(1, entry.value))}`}>{entry.letter}</span>
+            <span className="tv-value__count">{added ? 'computer' : `${entry.count} picked`}</span>
+            <span className="tv-value__points">{entry.value} pt</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

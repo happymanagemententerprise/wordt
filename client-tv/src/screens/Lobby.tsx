@@ -58,6 +58,10 @@ export function Lobby({ state }: { state: PublicRoomState }): ReactNode {
         ) : (
           <p className="tv-hint">Waiting for the host to start the game…</p>
         )}
+        <p className="tv-lobby__meta">
+          {state.players.length}/{state.maxPlayers} joined
+          {state.roundSeconds ? ` · rounds last ${state.roundSeconds}s` : ' · host is choosing a round length'}
+        </p>
       </div>
     </section>
   );

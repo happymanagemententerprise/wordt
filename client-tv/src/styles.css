@@ -616,6 +616,14 @@ h2 {
   box-shadow: inset 6px 0 0 #ff8fab;
 }
 
+.tv-team--C {
+  box-shadow: inset 6px 0 0 #86efac;
+}
+
+.tv-team--D {
+  box-shadow: inset 6px 0 0 #fdba74;
+}
+
 .tv-standing__members {
   display: block;
   font-size: 0.65em;
@@ -643,6 +651,27 @@ h2 {
 .tv-team-tag--B {
   background: rgba(255, 143, 171, 0.18);
   color: #ff8fab;
+}
+
+.tv-team-tag--C {
+  background: rgba(134, 239, 172, 0.18);
+  color: #86efac;
+}
+
+.tv-team-tag--D {
+  background: rgba(253, 186, 116, 0.18);
+  color: #fdba74;
+}
+
+.tv-lobby__meta {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+}
+
+.tv-value--added .tv-value__count {
+  font-style: italic;
+  color: var(--muted);
 }
 
 .tv-lobby__teams {

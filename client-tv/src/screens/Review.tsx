@@ -49,6 +49,16 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
         </div>
       );
     }
+    case 'missed_words': {
+      const best = step.words.slice(0, 3).map((word) => `${word.word} +${word.points}`).join(' · ');
+      return (
+        <div className="tv-reveal">
+          <p className="tv-eyebrow">Words you missed</p>
+          <p className="tv-reveal__word">{step.words.length} formable from the pool</p>
+          <p className="tv-reveal__who">{best}</p>
+        </div>
+      );
+    }
     case 'leaderboard':
       return <Standings players={state.standings} teamLabel={memberNames} />;
   }

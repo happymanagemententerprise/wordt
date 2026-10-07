@@ -12,7 +12,7 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
       <header className="tv-head">
         <div>
           <h2>Pick your letters</h2>
-          <p className="tv-hint">Letters picked by two or more players become usable.</p>
+          <p className="tv-hint">Letters two or more players pick enter the pool; the computer fills the rest.</p>
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="left" />
       </header>
@@ -23,7 +23,8 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
 
       <ul className="tv-picks">
         {state.players.map((player) => {
-          const percent = state.pickLimit === 0 ? 0 : Math.round((player.pickCount / state.pickLimit) * 100);
+          const limit = player.pickLimit ?? state.pickLimit;
+          const percent = limit === 0 ? 0 : Math.round((player.pickCount / limit) * 100);
           const isTeam = player.teamId === player.id;
           return (
             <li
@@ -42,7 +43,7 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
                 <span className="tv-pick__bar-fill" style={{ width: `${percent}%` }} />
               </span>
               <span className="tv-pick__count">
-                {player.pickCount}/{state.pickLimit}
+                {player.pickCount}/{limit}
               </span>
               <span className="tv-pick__letters">{player.pick.join(' ') || '—'}</span>
               <span className="tv-pick__state">{player.pickedLocked ? 'Locked in' : 'Picking…'}</span>
