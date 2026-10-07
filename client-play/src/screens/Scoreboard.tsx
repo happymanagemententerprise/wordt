@@ -32,7 +32,14 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
 
       <div className="actions">
         {!own.isHost ? (
-          <p className="hint">{final ? 'Waiting for the host…' : 'Waiting for the host to continue…'}</p>
+          <>
+            <p className="hint">{final ? 'Waiting for the host…' : 'Waiting for the host to continue…'}</p>
+            {final ? (
+              <button className="btn btn--ghost" type="button" disabled={game.busy} onClick={() => void game.leave()}>
+                Leave room
+              </button>
+            ) : null}
+          </>
         ) : final ? (
           <>
             <button className="btn btn--primary" type="button" disabled={game.busy} onClick={() => void game.newGame()}>
@@ -40,6 +47,9 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
             </button>
             <button className="btn" type="button" disabled={game.busy} onClick={() => void game.backToLobby()}>
               Back to lobby
+            </button>
+            <button className="btn btn--ghost btn--danger" type="button" disabled={game.busy} onClick={() => void game.leave()}>
+              Leave room
             </button>
           </>
         ) : (

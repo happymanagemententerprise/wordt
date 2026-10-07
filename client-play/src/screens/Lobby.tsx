@@ -98,30 +98,50 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
       </p>
 
       {own.isHost ? (
-        <div className="actions">
+        <>
+          <div className="actions">
+            <button
+              className="btn btn--ghost"
+              type="button"
+              disabled={game.busy}
+              onClick={() => void game.setTeamsEnabled(!state.teamsEnabled)}
+            >
+              {state.teamsEnabled ? 'Turn teams off' : 'Turn teams on'}
+            </button>
+            <button
+              className="btn btn--primary"
+              type="button"
+              disabled={game.busy || needsMorePlayers || state.roundSeconds == null}
+              onClick={() => void game.start()}
+            >
+              {game.busy ? 'Starting…' : 'Start game'}
+            </button>
+            {needsMorePlayers ? <p className="hint">At least two players are needed.</p> : null}
+            {!needsMorePlayers && state.roundSeconds == null ? (
+              <p className="hint">Set a round length to enable Start.</p>
+            ) : null}
+          </div>
+          <button
+            className="btn btn--ghost btn--danger"
+            type="button"
+            disabled={game.busy}
+            onClick={() => void game.leave()}
+          >
+            Leave room
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="hint">Waiting for the host to start the game…</p>
           <button
             className="btn btn--ghost"
             type="button"
             disabled={game.busy}
-            onClick={() => void game.setTeamsEnabled(!state.teamsEnabled)}
+            onClick={() => void game.leave()}
           >
-            {state.teamsEnabled ? 'Turn teams off' : 'Turn teams on'}
+            Leave room
           </button>
-          <button
-            className="btn btn--primary"
-            type="button"
-            disabled={game.busy || needsMorePlayers || state.roundSeconds == null}
-            onClick={() => void game.start()}
-          >
-            {game.busy ? 'Starting…' : 'Start game'}
-          </button>
-          {needsMorePlayers ? <p className="hint">At least two players are needed.</p> : null}
-          {!needsMorePlayers && state.roundSeconds == null ? (
-            <p className="hint">Set a round length to enable Start.</p>
-          ) : null}
-        </div>
-      ) : (
-        <p className="hint">Waiting for the host to start the game…</p>
+        </>
       )}
     </section>
   );

@@ -44,6 +44,18 @@ function dropSeat(): void {
   localStorage.removeItem(SEAT_KEY);
 }
 
+/** Return the phone to the home page and forget the seat. */
+function returnHome(
+  setSeat: (seat: Seat | null) => void,
+  setState: (state: PublicRoomState | null) => void,
+  setOwn: (own: OwnState | null) => void,
+): void {
+  dropSeat();
+  setSeat(null);
+  setState(null);
+  setOwn(null);
+}
+
 export function ask(event: string, payload: Record<string, unknown> = {}): Promise<Ack> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => resolve({ ok: false, error: 'The server is not responding.' }), 8000);
@@ -76,6 +88,7 @@ export interface GameApi {
   lockPick: () => Promise<Ack>;
   submitWord: (word: string) => Promise<Ack>;
   nextReviewStep: () => Promise<Ack>;
+  leave: () => Promise<Ack>;
 }
 
 export function useGame(): GameApi {
@@ -133,11 +146,13 @@ export function useGame(): GameApi {
       rejoin();
     };
     const onDisconnect = () => setConnected(false);
+    const onRoomEnded = () => returnHome(setSeat, setState, setOwn);
 
     socket.on('state', onState);
     socket.on('own', onOwn);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('room:ended', onRoomEnded);
     if (socket.connected) {
       setConnected(true);
       rejoin();
@@ -148,6 +163,7 @@ export function useGame(): GameApi {
       socket.off('own', onOwn);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('room:ended', onRoomEnded);
       if (errorTimer.current) clearTimeout(errorTimer.current);
     };
   }, [dismissError, rejoin]);
@@ -210,5 +226,10 @@ export function useGame(): GameApi {
     lockPick: () => guarded('pick:lock'),
     submitWord: (word) => ask('word:submit', { word }),
     nextReviewStep: () => guarded('review:next'),
+    leave: async () => {
+      const ack = await guarded('room:leave');
+      if (ack.ok) returnHome(setSeat, setState, setOwn);
+      return ack;
+    },
   };
 }

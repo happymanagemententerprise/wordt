@@ -270,6 +270,11 @@ h2 {
   color: var(--muted);
 }
 
+.btn--danger {
+  border-color: rgba(255, 93, 115, 0.45);
+  color: var(--bad);
+}
+
 .topbar__end {
   width: auto;
   min-height: 0;
