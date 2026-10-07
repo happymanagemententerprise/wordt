@@ -1,8 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 
 import type { GameApi } from '../game';
+import { Rules } from './Rules';
 
 export function Join({ game }: { game: GameApi }): ReactNode {
+  const [showRules, setShowRules] = useState(false);
   const [name, setName] = useState('');
   const [code, setCode] = useState(() => {
     const fromUrl = new URLSearchParams(window.location.search).get('room');
@@ -53,12 +55,20 @@ export function Join({ game }: { game: GameApi }): ReactNode {
 
   const message = localError ?? game.error;
 
+  if (showRules) {
+    return <Rules onBack={() => setShowRules(false)} />;
+  }
+
   return (
     <div className="app app--solo">
       <div className="hero">
         <h1 className="hero__title">Wordt</h1>
         <p className="hero__tagline">Pick letters together. Make the most words.</p>
       </div>
+
+      <button className="rules-link" type="button" onClick={() => setShowRules(true)}>
+        How to play
+      </button>
 
       <label className="field">
         <span className="field__label">Your name</span>

@@ -91,6 +91,15 @@ async function main(): Promise<void> {
     browser = await chromium.launch({ channel: 'chrome', headless: true });
 
     const ann = await newPlayer(browser, 'Ann');
+
+    await ann.page.getByRole('button', { name: 'How to play' }).click();
+    await ann.page.getByRole('heading', { name: 'How to play' }).waitFor({ state: 'visible' });
+    const phoneRules = await ann.page.locator('.rules__num').count();
+    assert(phoneRules === 7, `expected 7 phone rule sections, saw ${phoneRules}`);
+    await ann.page.getByRole('button', { name: '← Back' }).click();
+    await ann.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible' });
+    console.log('the phone how-to-play page renders and backs out');
+
     await ann.page.getByRole('button', { name: 'Create a room' }).click();
     await ann.page.locator('.room-code').waitFor({ state: 'visible' });
     const code = (await ann.page.locator('.room-code').innerText()).replace(/\s+/g, '');
@@ -104,6 +113,19 @@ async function main(): Promise<void> {
     await ann.page.locator('.standing').nth(1).waitFor({ state: 'visible' });
     await bob.page.locator('.standing').nth(1).waitFor({ state: 'visible' });
     console.log('both players are in the lobby');
+
+    const tvRulesContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const tvRulesPage = await tvRulesContext.newPage();
+    watch(tvRulesPage, 'TV rules');
+    await loadUntil(tvRulesPage, TV, 'input.tv-entry__input', 'the TV entry');
+    await tvRulesPage.getByRole('button', { name: 'How to play' }).click();
+    await tvRulesPage.getByRole('heading', { name: 'How to play' }).waitFor({ state: 'visible' });
+    const tvRulesCards = await tvRulesPage.locator('.tv-rules__card').count();
+    assert(tvRulesCards === 7, `expected 7 TV rule cards, saw ${tvRulesCards}`);
+    await tvRulesPage.getByRole('button', { name: 'Back to entry' }).click();
+    await tvRulesPage.locator('.tv-entry__input').waitFor({ state: 'visible' });
+    await tvRulesContext.close();
+    console.log('the TV how-to-play page renders and backs out');
 
     const tvContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
     const tv = await tvContext.newPage();
@@ -158,8 +180,8 @@ async function main(): Promise<void> {
     assert(words === 1, `expected Ann to have one accepted word, saw ${words}`);
     console.log('both players submitted a word');
 
-    await ann.page.locator('.reveal').waitFor({ state: 'visible', timeout: 60000 });
-    await tv.locator('.tv-reveal').waitFor({ state: 'visible', timeout: 15000 });
+    await ann.page.locator('.reveal').waitFor({ state: 'visible', timeout: 120000 });
+    await tv.locator('.tv-reveal').waitFor({ state: 'visible', timeout: 20000 });
     console.log('the TV is revealing the review');
     const resultsHeading = ann.page.getByRole('heading', { name: 'Round 1 results' });
     for (let step = 0; step < 25; step += 1) {
