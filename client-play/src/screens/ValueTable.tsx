@@ -12,7 +12,9 @@ export function ValueTableScreen({ game }: { game: GameApi }): ReactNode {
       <div className="screen__head">
         <div>
           <h2>Letter values</h2>
-          <p className="hint">Rarer letters are worth more. Every usable letter scores.</p>
+          <p className="hint">
+      Your overlap letters get rarity prices (vowels stay cheap). Letters the computer added are fixed at their Scrabble value.
+    </p>
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="to words" />
       </div>

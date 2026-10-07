@@ -16,7 +16,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 const SERVER = 'http://localhost:3000/socket.io/?EIO=4&transport=polling';
 const CLIENT = 'http://localhost:5173/';
 const TV = 'http://localhost:5174/';
-const PICK = ['S', 'T', 'A', 'R', 'E', 'O', 'N', 'I', 'L', 'D'];
+const PICK = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W'];
 
 const pageErrors: string[] = [];
 
@@ -43,22 +43,35 @@ function watch(page: Page, label: string): void {
     if (message.type() !== 'error') return;
     const text = message.text();
     if (text.includes('favicon') || text.includes('Failed to load resource')) return;
+    // Vite's HMR websocket auto-reconnects; a refused connection during a cold
+    // start is expected and not a product error.
+    if (/WebSocket connection to 'ws:\/\/localhost:(5173|5174)\//.test(text)) return;
     pageErrors.push(`${label} console: ${text}`);
   });
+}
+
+async function loadUntil(page: Page, url: string, ready: string, log: string): Promise<void> {
+  await page.goto(url);
+  const anchor = page.locator(ready);
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await anchor.waitFor({ state: 'visible', timeout: 10000 });
+      return;
+    } catch (error) {
+      if (attempt === 4) throw error;
+      if (log) console.log(`reloading ${log} to get past the cold vite start`);
+      await page.waitForTimeout(750);
+      await page.reload({ waitUntil: 'load' });
+    }
+  }
 }
 
 async function newPlayer(browser: Browser, name: string): Promise<{ context: BrowserContext; page: Page }> {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   watch(page, name);
-  await page.goto(CLIENT);
-  const nameInput = page.locator('input[placeholder="e.g. Sam"]');
-  try {
-    await nameInput.fill(name);
-  } catch (error) {
-    console.error(`--- ${name} root:`, await page.locator('#root').innerHTML());
-    throw error;
-  }
+  await loadUntil(page, CLIENT, 'input[placeholder="e.g. Sam"]', name);
+  await page.locator('input[placeholder="e.g. Sam"]').fill(name);
   return { context, page };
 }
 
@@ -95,12 +108,12 @@ async function main(): Promise<void> {
     const tvContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
     const tv = await tvContext.newPage();
     watch(tv, 'TV');
-    await tv.goto(`${TV}?room=${code}`);
-    await tv.locator('.tv-code').waitFor({ state: 'visible', timeout: 20000 });
+    await loadUntil(tv, `${TV}?room=${code}`, '.tv-code', 'the TV');
     const tvLobbyPlayers = await tv.locator('.tv-namelist li').count();
     assert(tvLobbyPlayers === 2, `expected the TV lobby to list 2 players, saw ${tvLobbyPlayers}`);
     console.log(`the TV is watching room ${code}`);
 
+    await ann.page.getByRole('button', { name: '1m', exact: true }).click();
     await ann.page.getByRole('button', { name: 'Start game' }).click();
 
     await ann.page.locator('.keyboard').waitFor({ state: 'visible' });
@@ -110,14 +123,14 @@ async function main(): Promise<void> {
     assert(tvPicks === 2, `expected the TV to track 2 pickers, saw ${tvPicks}`);
     await pickLetters(ann.page);
     await pickLetters(bob.page);
-    console.log('both players picked ten letters');
+    console.log('both players picked fifteen letters');
 
     await ann.page.getByRole('button', { name: 'Lock in my letters' }).click();
     await bob.page.getByRole('button', { name: 'Lock in my letters' }).click();
 
     await ann.page.locator('.value-table').waitFor({ state: 'visible' });
     const valueRows = await ann.page.locator('.value-row').count();
-    assert(valueRows === 10, `expected 10 usable letters, saw ${valueRows}`);
+    assert(valueRows === 15, `expected 15 usable letters, saw ${valueRows}`);
     console.log(`letter value table shows ${valueRows} usable letters`);
 
     await ann.page.locator('.input--word').waitFor({ state: 'visible', timeout: 20000 });
@@ -125,7 +138,7 @@ async function main(): Promise<void> {
     await tv.locator('.tv-writer').nth(1).waitFor({ state: 'visible', timeout: 15000 });
     const tvValues = await tv.locator('.tv-value').count();
     const tvWriters = await tv.locator('.tv-writer').count();
-    assert(tvValues === 10, `expected the TV to show 10 letter values, saw ${tvValues}`);
+    assert(tvValues === 15, `expected the TV to show 15 letter values, saw ${tvValues}`);
     assert(tvWriters === 2, `expected the TV to track 2 writers, saw ${tvWriters}`);
 
     await ann.page.locator('.input--word').fill('ZZZZ');

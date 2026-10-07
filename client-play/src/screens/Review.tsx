@@ -53,6 +53,14 @@ export function Review({ game }: { game: GameApi }): ReactNode {
               {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
             </p>
           </>
+        ) : step.kind === 'missed_words' ? (
+          <>
+            <p className="eyebrow">Words you missed</p>
+            <p className="reveal__word">
+              {step.words.map((missed) => `${missed.word} +${missed.points}`).join(' · ')}
+            </p>
+            <p className="reveal__who">formable from the pool — nobody found them</p>
+          </>
         ) : (
           <>
             <p className="eyebrow">Standings</p>

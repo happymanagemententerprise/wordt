@@ -78,7 +78,7 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
           <p className="hint">
             {own.teamId
               ? 'Your team picks ten letters between you, so no one grabs the same one.'
-              : 'Letters picked by two or more players become usable.'}
+              : 'Letters two or more players pick enter the pool; the computer fills the rest.'}
           </p>
         </div>
         <Countdown endsAt={state.phaseEndsAt} />

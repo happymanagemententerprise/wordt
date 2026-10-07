@@ -86,7 +86,7 @@ export function Standings({
             {player.name}
             {player.isHost ? <span className="tag">host</span> : null}
             {player.teamId && player.teamId !== player.id ? (
-              <span className="tag tag--team">{player.teamId === 'A' ? 'A' : 'B'}</span>
+              <span className="tag tag--team">{player.teamId}</span>
             ) : null}
             {!player.connected ? <span className="tag tag--away">offline</span> : null}
           </span>
@@ -104,19 +104,24 @@ export function Standings({
 
 export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
   if (table.entries.length === 0) {
-    return <p className="empty">No letter was picked twice, so there is nothing to score with.</p>;
+    return <p className="empty">There are no usable letters this round.</p>;
   }
   return (
     <div className="value-table">
-      {table.entries.map((entry) => (
-        <div key={entry.letter} className="value-row">
-          <span className={`value-letter value-${Math.min(5, Math.max(1, entry.value))}`}>
-            {entry.letter}
-          </span>
-          <span className="value-count">picked by {entry.count}</span>
-          <span className="value-points">{entry.value} pt</span>
-        </div>
-      ))}
+      {table.entries.map((entry) => {
+        const added = table.source[entry.letter] === 'added';
+        return (
+          <div key={entry.letter} className="value-row">
+            <span className={`value-letter value-${Math.min(5, Math.max(1, entry.value))}`}>
+              {entry.letter}
+            </span>
+            <span className="value-count">
+              {added ? 'added by the computer' : `picked by ${entry.count}`}
+            </span>
+            <span className="value-points">{entry.value} pt</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

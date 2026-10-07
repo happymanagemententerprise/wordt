@@ -324,6 +324,35 @@ h2 {
   cursor: not-allowed;
 }
 
+/* --- host timer choices --------------------------------------------------- */
+
+.timer-choices {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.chip-btn {
+  flex: 1;
+  padding: 0.55rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chip-btn--on {
+  border-color: var(--accent);
+  background: rgba(255, 209, 102, 0.14);
+}
+
+.chip-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .pill--team {
   background: rgba(125, 211, 252, 0.16);
   color: #7dd3fc;
