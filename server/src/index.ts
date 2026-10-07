@@ -344,6 +344,33 @@ io.on('connection', (socket: Socket) => {
     ack({ ok: true });
   });
 
+  on<{ playerId?: unknown }, ActionAck>(socket, 'host:transfer', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    const targetId = typeof payload?.playerId === 'string' ? payload.playerId : '';
+    const result = ctx.entry.room.transferHost(ctx.playerId, targetId);
+    if (result === 'not-host') {
+      ack({ ok: false, error: 'Only the host can do that.' });
+      return;
+    }
+    if (result === 'self') {
+      ack({ ok: false, error: 'You are already the host.' });
+      return;
+    }
+    if (result === 'no-target') {
+      ack({ ok: false, error: 'That player is not in this room.' });
+      return;
+    }
+    if (result === 'not-connected') {
+      ack({ ok: false, error: 'That player has disconnected.' });
+      return;
+    }
+    ack({ ok: true });
+  });
+
   on<Record<string, never>, ActionAck>(socket, 'room:leave', (_payload, ack) => {
     const session = sessions.get(socket.id);
     if (!session?.playerId) {

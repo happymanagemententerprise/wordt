@@ -300,6 +300,22 @@ export class Room {
     return true;
   }
 
+  /** Host hands control to another connected player. Works in any phase. */
+  transferHost(hostId: PlayerId, targetId: PlayerId): 'ok' | 'not-host' | 'self' | 'no-target' | 'not-connected' {
+    const host = this.players.get(hostId);
+    if (!host?.isHost) return 'not-host';
+    if (targetId === hostId) return 'self';
+    const target = this.players.get(targetId);
+    if (!target) return 'no-target';
+    if (!target.connected) return 'not-connected';
+
+    host.isHost = false;
+    target.isHost = true;
+    this.emitState();
+    this.emitOwn();
+    return 'ok';
+  }
+
   /** The length of the word phase, chosen by the host before the game starts. */
   setWordSeconds(playerId: PlayerId, seconds: number): boolean {
     if (this.phase !== 'LOBBY') return false;
