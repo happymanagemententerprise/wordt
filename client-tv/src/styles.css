@@ -840,3 +840,104 @@ h2 {
     max-height: none;
   }
 }
+
+/* ---------------------------------------------------------- rules / how to play */
+
+.tv-link {
+  padding: 0.5em 1.2em;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--accent);
+  font-size: clamp(1rem, 1.4vw, 1.5rem);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.tv-rules {
+  justify-content: flex-start;
+  max-width: 96rem;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.tv-rules__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.tv-rules__head .tv-brand--hero {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.tv-btn--ghost {
+  background: none;
+  color: var(--accent);
+  border-color: var(--line);
+}
+
+.tv-rules__title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  letter-spacing: -0.02em;
+}
+
+.tv-rules__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 2rem);
+}
+
+.tv-rules__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: clamp(1.25rem, 2vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.tv-rules__heading {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.tv-rules__intro {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1rem, 1.4vw, 1.4rem);
+}
+
+.tv-rules__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.tv-rules__list--bullets {
+  list-style: disc;
+}
+
+.tv-rules__item {
+  color: var(--muted);
+  font-size: clamp(0.95rem, 1.3vw, 1.3rem);
+  line-height: 1.5;
+}
+
+.tv-rules__item::marker {
+  color: var(--accent);
+}
+
+@media (max-width: 70rem) {
+  .tv-rules__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

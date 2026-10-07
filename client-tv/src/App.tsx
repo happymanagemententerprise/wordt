@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import type { PublicRoomState } from '@wordt/shared';
 
@@ -8,6 +8,7 @@ import { Picking } from './screens/Picking';
 import { Results } from './screens/Results';
 import { Review } from './screens/Review';
 import { RoomEntry } from './screens/RoomEntry';
+import { Rules } from './screens/Rules';
 import { ValueTableScreen, Words } from './screens/ValueTable';
 import { phaseLabel } from './ui';
 
@@ -50,9 +51,13 @@ function renderPhase(state: PublicRoomState): ReactNode {
 
 export default function App(): ReactNode {
   const tv = useTv();
+  const [showRules, setShowRules] = useState(false);
 
   if (!tv.connected) return <Centered title="Connecting…" detail="Looking for the Wordt server." />;
-  if (!tv.watching) return <RoomEntry error={tv.error} onSubmit={(code) => void tv.watch(code)} />;
+  if (!tv.watching) {
+    if (showRules) return <Rules onBack={() => setShowRules(false)} />;
+    return <RoomEntry error={tv.error} onHowToPlay={() => setShowRules(true)} onSubmit={(code) => void tv.watch(code)} />;
+  }
 
   const state = tv.state;
   if (!state) return <Centered title="Joining…" detail={tv.roomCode ?? ''} />;

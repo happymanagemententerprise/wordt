@@ -1,6 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 
-export function RoomEntry({ error, onSubmit }: { error: string | null; onSubmit: (code: string) => void }): ReactNode {
+export function RoomEntry({
+  error,
+  onHowToPlay,
+  onSubmit,
+}: {
+  error: string | null;
+  onHowToPlay: () => void;
+  onSubmit: (code: string) => void;
+}): ReactNode {
   const [code, setCode] = useState('');
 
   const submit = (event: FormEvent) => {
@@ -29,6 +37,9 @@ export function RoomEntry({ error, onSubmit }: { error: string | null; onSubmit:
         </button>
       </form>
       {error ? <p className="tv-error">{error}</p> : null}
+      <button className="tv-link" type="button" onClick={onHowToPlay}>
+        How to play
+      </button>
     </div>
   );
 }
