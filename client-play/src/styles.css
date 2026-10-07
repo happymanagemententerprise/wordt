@@ -9,6 +9,7 @@
   --accent: #ffd166;
   --accent-ink: #1b1400;
   --good: #3ddc97;
+  --good-ink: #06281c;
   --bad: #ff5d73;
   --radius: 14px;
 }
@@ -275,6 +276,23 @@ h2 {
   color: var(--bad);
 }
 
+.btn--ready {
+  background: var(--good);
+  border-color: var(--good);
+  color: var(--good-ink);
+  animation: pulse-ready 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-ready {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 0.55rem rgba(61, 220, 151, 0);
+  }
+}
+
 .topbar__end {
   width: auto;
   min-height: 0;
@@ -522,6 +540,30 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
+.standing__actions {
+  grid-column: 2 / 4;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.make-host {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(255, 209, 102, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.make-host:hover {
+  background: rgba(255, 209, 102, 0.14);
+}
+
 .tag {
   margin-left: 0.45rem;
   padding: 0.05rem 0.4rem;
@@ -537,6 +579,10 @@ h2 {
 .tag--away {
   background: var(--surface-2);
   color: var(--muted);
+}
+
+.tag--host {
+  border: 1px solid rgba(255, 209, 102, 0.55);
 }
 
 .tag--team {
@@ -584,35 +630,74 @@ h2 {
 .keyboard {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.4rem;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--surface);
 }
 
 .keyboard--locked {
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .key {
   aspect-ratio: 1;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
   font-weight: 800;
-  font-size: 1rem;
+  font-size: clamp(1.05rem, 5vw, 1.35rem);
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   transition:
+    transform 0.08s ease,
     background 0.12s ease,
-    border-color 0.12s ease;
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.key:active:not(:disabled) {
+  transform: translateY(1px) scale(0.92);
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0.35);
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .key--on {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 0 12px rgba(255, 209, 102, 0.45);
+  animation: key-pop 0.22s ease;
+}
+
+.key--teammate {
+  border-style: dashed;
+  opacity: 0.4;
 }
 
 .key:disabled:not(.key--on) {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+@keyframes key-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .locked {
@@ -900,4 +985,163 @@ h2 {
 
 .rules__item::marker {
   color: var(--accent);
+}
+
+/* --- motion --------------------------------------------------------------- */
+
+.app,
+.screen,
+.splash {
+  animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.standing,
+.value-row,
+.teams .team-card,
+.timer-choices .chip-btn {
+  animation: rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+.banner {
+  animation: drop-in 0.28s ease both;
+}
+
+.reveal {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.reveal__word {
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.myround {
+  animation: pop-in 0.3s ease both;
+}
+
+.feedback--ok {
+  animation: bounce-in 0.3s ease both;
+}
+
+.feedback--bad {
+  animation: shake 0.35s ease both;
+}
+
+.locked {
+  animation: glow-in 0.4s ease both;
+}
+
+.chip-btn--on {
+  animation: soft-pulse 2.2s ease-in-out infinite;
+}
+
+.wordlist li {
+  animation: rise 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.team-card--on {
+  animation: soft-pulse 2.2s ease-in-out infinite;
+}
+
+.pill--phase {
+  transition: background 0.3s ease;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes glow-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 0.4rem rgba(255, 209, 102, 0.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

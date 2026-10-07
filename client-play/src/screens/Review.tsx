@@ -20,7 +20,7 @@ export function Review({ game }: { game: GameApi }): ReactNode {
         Round {state.round} of {state.roundCount}
       </p>
 
-      <div className="reveal" aria-live="polite">
+      <div className="reveal" key={state.reviewIndex} aria-live="polite">
         {!step ? (
           <p className="lead">Scoring the round…</p>
         ) : step.kind === 'unique_word' ? (

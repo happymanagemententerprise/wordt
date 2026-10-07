@@ -111,7 +111,11 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
         {own.pickedLocked ? (
           <p className="locked">Locked in · {readyCount}</p>
         ) : (
-          <button className="btn btn--primary" type="button" onClick={() => void game.lockPick()}>
+          <button
+            className={`btn btn--primary${selected.length === own.pickLimit ? ' btn--ready' : ''}`}
+            type="button"
+            onClick={() => void game.lockPick()}
+          >
             Lock in my letters
           </button>
         )}
