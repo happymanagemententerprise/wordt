@@ -1,6 +1,13 @@
 import { Server, type Socket } from 'socket.io';
 
-import { MIN_WORD_LENGTH, type JoinAck, type WordRejection } from '@wordt/shared';
+import {
+  MAX_PLAYERS,
+  MIN_WORD_LENGTH,
+  ROUND_SECONDS_MAX,
+  ROUND_SECONDS_MIN,
+  type JoinAck,
+  type WordRejection,
+} from '@wordt/shared';
 
 import { Room, type WordOutcome } from './room';
 
@@ -124,7 +131,7 @@ function rejectionMessage(reason: WordRejection | undefined): string {
     case 'TOO_SHORT':
       return `Too short — words need at least ${MIN_WORD_LENGTH} letters.`;
     case 'UNUSABLE_LETTER':
-      return 'That letter was not picked by two or more players.';
+      return 'That letter is not in this round\'s pool.';
     case 'DUPLICATE':
       return 'You already submitted that word.';
     default:
@@ -203,7 +210,7 @@ io.on('connection', (socket: Socket) => {
         socket.leave(code);
         const error =
           entry.room.phase === 'LOBBY'
-            ? 'That room is full.'
+            ? `That room is full (up to ${MAX_PLAYERS} players).`
             : 'That game has already started.';
         ack({ ok: false, error });
         return;
@@ -255,7 +262,34 @@ io.on('connection', (socket: Socket) => {
       ack({ ok: false, error: 'At least two players must be connected.' });
       return;
     }
+    if (room.wordSeconds == null) {
+      ack({ ok: false, error: 'Choose a round length in the lobby first.' });
+      return;
+    }
     ack({ ok: room.startGame(ctx.playerId) });
+  });
+
+  on<{ seconds?: unknown }, ActionAck>(socket, 'host:timer', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    const room = ctx.entry.room;
+    if (room.host?.id !== ctx.playerId) {
+      ack({ ok: false, error: 'Only the host can set the round length.' });
+      return;
+    }
+    const seconds = Number(payload?.seconds);
+    if (!Number.isInteger(seconds) || seconds < ROUND_SECONDS_MIN || seconds > ROUND_SECONDS_MAX) {
+      ack({ ok: false, error: `The round length must be ${ROUND_SECONDS_MIN}-${ROUND_SECONDS_MAX} seconds.` });
+      return;
+    }
+    if (!room.setWordSeconds(ctx.playerId, seconds)) {
+      ack({ ok: false, error: 'The round length can only be set in the lobby.' });
+      return;
+    }
+    ack({ ok: true });
   });
 
   on<Record<string, never>, ActionAck>(socket, 'host:next', (_payload, ack) => {

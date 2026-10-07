@@ -5,23 +5,27 @@ import {
   LETTERS_PER_PLAYER_MORE,
   LETTERS_PER_PLAYER_TWO,
   LETTER_POOL,
+  MAX_PLAYERS,
   MIN_WORD_LENGTH,
   PICK_PHASE_SECONDS,
+  POOL_SIZE,
   ROUNDS,
   REVIEW_STEP_SECONDS,
-  TEAM_IDS,
-  TEAM_MAX_PLAYERS,
+  TEAM_SIZE,
   VALUE_REVEAL_SECONDS,
   WORD_PHASE_SECONDS,
+  buildPool,
   computeLetterValues,
-  countPick,
   lettersPerTeamMember,
   mergeTeam,
   normalizeWord,
   scoreRound,
+  teamIdsForPlayerCount,
   teamName,
   validateWord,
+  validTeamId,
 } from '@wordt/shared';
+import { computeMissedWords, loadDictionary } from '@wordt/shared/dictionary';
 import type {
   FeedItem,
   Letter,
@@ -36,12 +40,10 @@ import type {
   RoundPlayerInput,
   RoundResult,
   StatAward,
-  TeamId,
   ValidationResult,
   WordCheckContext,
   WordRejection,
 } from '@wordt/shared';
-import { loadDictionary } from '@wordt/shared/dictionary';
 
 const DICTIONARY = loadDictionary();
 
@@ -76,7 +78,7 @@ export interface RoomPlayer {
   connected: boolean;
   joinedAt: number;
   isHost: boolean;
-  teamId: TeamId | null;
+  teamId: string | null;
   pick: Letter[];
   pickLocked: boolean;
   validWords: string[];
@@ -111,6 +113,8 @@ export class Room {
   reviewIndex = 0;
   pickLimit = LETTERS_PER_PLAYER_TWO;
   teamsEnabled = false;
+  /** Word-phase length the host chose in the lobby, before this game. */
+  wordSeconds: number | null = null;
   readonly feed: FeedItem[] = [];
 
   readonly players = new Map<PlayerId, RoomPlayer>();
@@ -146,7 +150,7 @@ export class Room {
 
     // New players may only arrive while the lobby is open.
     if (this.phase !== 'LOBBY') return null;
-    if (this.players.size >= 16) return null;
+    if (this.players.size >= MAX_PLAYERS) return null;
 
     const id = existingId ?? `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const player: RoomPlayer = {
@@ -156,7 +160,7 @@ export class Room {
       connected: true,
       joinedAt: Date.now(),
       isHost: this.players.size === 0,
-      teamId: this.teamsEnabled ? this.leastLoadedTeam() : null,
+      teamId: null,
       pick: [],
       pickLocked: false,
       validWords: [],
@@ -166,6 +170,7 @@ export class Room {
       lifetimeValidWords: 0,
     };
     this.players.set(id, player);
+    if (this.teamsEnabled) player.teamId = this.leastLoadedTeam();
     return player;
   }
 
@@ -253,7 +258,7 @@ export class Room {
     this.letterValues = null;
     this.feed.length = 0;
     this.pickLimit = this.teamsEnabled
-      ? lettersPerTeamMember(TEAM_MAX_PLAYERS)
+      ? lettersPerTeamMember(TEAM_SIZE)
       : this.players.size >= 3
         ? LETTERS_PER_PLAYER_MORE
         : LETTERS_PER_PLAYER_TWO;
@@ -295,6 +300,16 @@ export class Room {
     return true;
   }
 
+  /** The length of the word phase, chosen by the host before the game starts. */
+  setWordSeconds(playerId: PlayerId, seconds: number): boolean {
+    if (this.phase !== 'LOBBY') return false;
+    if (this.host?.id !== playerId) return false;
+    this.wordSeconds = seconds;
+    this.emitState();
+    this.emitOwn();
+    return true;
+  }
+
   /** Host turns team play on or off from the lobby. */
   setTeamsEnabled(playerId: PlayerId, enabled: boolean): boolean {
     if (this.phase !== 'LOBBY') return false;
@@ -314,7 +329,7 @@ export class Room {
   /** A player moves between teams while the lobby is open. */
   setTeam(playerId: PlayerId, teamId: string): boolean {
     if (this.phase !== 'LOBBY' || !this.teamsEnabled) return false;
-    if (!TEAM_IDS.includes(teamId as TeamId)) return false;
+    if (!validTeamId(teamId, this.players.size)) return false;
 
     const player = this.players.get(playerId);
     if (!player) return false;
@@ -323,20 +338,29 @@ export class Room {
     const others = [...this.players.values()].filter(
       (other) => other.id !== player.id && other.teamId === teamId,
     );
-    if (others.length >= TEAM_MAX_PLAYERS) return false;
+    if (others.length >= TEAM_SIZE) return false;
 
-    player.teamId = teamId as TeamId;
+    player.teamId = teamId;
     this.emitState();
     this.emitOwn(playerId);
     return true;
   }
 
-  private leastLoadedTeam(): TeamId {
-    const counts: Record<string, number> = { A: 0, B: 0 };
-    for (const player of this.players.values()) {
-      if (player.teamId) counts[player.teamId] = (counts[player.teamId] ?? 0) + 1;
+  /** The emptiest team, or the alphabetically first among equals. */
+  private leastLoadedTeam(): string {
+    let best: string | null = null;
+    let bestCount = Infinity;
+    for (const teamId of teamIdsForPlayerCount(this.players.size)) {
+      let count = 0;
+      for (const player of this.players.values()) {
+        if (player.teamId === teamId) count += 1;
+      }
+      if (count < bestCount) {
+        bestCount = count;
+        best = teamId;
+      }
     }
-    return (counts.A ?? 0) <= (counts.B ?? 0) ? 'A' : 'B';
+    return best ?? 'A';
   }
 
   // ------------------------------------------------------------------ picks
@@ -398,12 +422,15 @@ export class Room {
       return player.pick;
     });
 
-    const counts = countPick(picks);
-    this.letterValues = computeLetterValues(counts);
+    // Overlap letters become the "tension" pool; the computer tops the lot up
+    // to a fixed size with letters nobody overlapped on.
+    const { pool, computerAdded } = buildPool(picks, POOL_SIZE);
+    this.letterValues = computeLetterValues(picks, pool, new Set(computerAdded));
 
     if (this.letterValues.entries.length === 0) {
-      this.notice = 'No letter was picked by two or more players, so there are no usable letters. The word phase is skipped.';
-      this.letterValues = { entries: [], values: {}, counts: {} };
+      // Unreachable with a 15-letter pool, but never start a word phase blind.
+      this.notice = 'There are no usable letters. The word phase is skipped.';
+      this.letterValues = { entries: [], values: {}, counts: {}, source: {} };
       this.setPhase('NOTICE', REVEAL_SECONDS, () => this.scoreAndReview());
       this.emitState();
       this.emitOwn();
@@ -416,7 +443,7 @@ export class Room {
   }
 
   private beginWordPhase(): void {
-    this.setPhase('WORDS', WORD_SECONDS, () => this.scoreAndReview());
+    this.setPhase('WORDS', this.wordSeconds ?? WORD_SECONDS, () => this.scoreAndReview());
     this.emitState();
     this.emitOwn();
   }
@@ -467,10 +494,17 @@ export class Room {
   // --------------------------------------------------------------- scoring
 
   private scoreAndReview(): void {
-    const table = this.letterValues ?? { entries: [], values: {}, counts: {} };
+    const table = this.letterValues ?? { entries: [], values: {}, counts: {}, source: {} };
 
     const inputs = this.buildScoringInputs();
     const result = scoreRound({ players: inputs, letterValues: table.values });
+
+    // Words the final pool could have made that nobody actually submitted.
+    if (this.letterValues && this.letterValues.entries.length > 0) {
+      const pool = new Set(this.letterValues.entries.map((entry) => entry.letter));
+      const submitted = new Set(inputs.flatMap((input) => input.validWords));
+      result.missedWords = computeMissedWords(DICTIONARY, pool, table.values, submitted);
+    }
     this.lastRoundResult = result;
 
     for (const entry of result.players) {
@@ -512,7 +546,7 @@ export class Room {
 
     const members = new Map<string, RoundPlayerInput[]>();
     for (const player of this.players.values()) {
-      const teamId = player.teamId ?? TEAM_IDS[0];
+      const teamId = player.teamId ?? 'A';
       const list = members.get(teamId);
       if (list) list.push(toInput(player));
       else members.set(teamId, [toInput(player)]);
@@ -625,6 +659,7 @@ export class Room {
         totalTries: player.totalTries,
         isHost: player.isHost,
         teamId: player.teamId,
+        pickLimit: this.pickLimitFor(player),
         pick: [...player.pick],
       }));
 
@@ -653,7 +688,9 @@ export class Room {
       usableLetterCount: this.letterValues?.entries.length ?? 0,
       minWordLength: MIN_WORD_LENGTH,
       pickLimit: this.pickLimit,
-      timers: { pick: PICK_SECONDS, word: WORD_SECONDS },
+      timers: { pick: PICK_SECONDS, word: this.wordSeconds ?? WORD_SECONDS },
+      roundSeconds: this.wordSeconds,
+      maxPlayers: MAX_PLAYERS,
       lastRoundResult: this.lastRoundResult,
       finalStandings,
       notice: this.notice,
@@ -707,6 +744,7 @@ export class Room {
         totalTries: team.totalTries,
         isHost: team.isHost,
         teamId: team.id,
+        pickLimit: 0,
         pick: [],
       }));
   }
@@ -751,6 +789,10 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
 
   if (result.draftPenalties.length > 0) {
     steps.push({ kind: 'draft_penalty', entries: result.draftPenalties });
+  }
+
+  if (result.missedWords && result.missedWords.length > 0) {
+    steps.push({ kind: 'missed_words', words: result.missedWords });
   }
 
   steps.push({ kind: 'leaderboard' });

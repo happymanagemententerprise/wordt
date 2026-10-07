@@ -112,16 +112,26 @@ async function main(): Promise<void> {
 
   const nonHostStart = await emit(bob, 'host:start');
   assert(!nonHostStart.ok, 'non-host must not be able to start');
+
+  const noTimerStart = await emit(ann, 'host:start');
+  assert(!noTimerStart.ok, 'start must fail until the host picks a round length');
+
+  const badTimer = await emit(ann, 'host:timer', { seconds: 5 });
+  assert(!badTimer.ok, 'round length below the minimum must be rejected');
+  assert((await emit(ann, 'host:timer', { seconds: 30 })).ok, 'host should set the round length');
+  const withTimer = await awaitState(ann, (s) => s.roundSeconds === 30, 5000, 'roundSeconds 30');
+  assert(withTimer.roundSeconds === 30, 'lobby should expose the chosen round length');
+
   assert((await emit(ann, 'host:start')).ok, 'host should start the game');
 
   const picking = await awaitState(ann, (s) => s.phase === 'PICKING', 5000, 'PICKING');
   console.log(`round ${picking.round} -> PICKING, pickLimit=${picking.pickLimit}`);
 
-  const letters = ['S', 'T', 'A', 'R', 'E', 'O', 'N', 'I', 'L', 'D'];
+  const letters = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W'];
   assert((await emit(ann, 'pick:set', { letters })).ok, 'ann pick:set failed');
   assert((await emit(bob, 'pick:set', { letters })).ok, 'bob pick:set failed');
 
-  const own = await awaitOwn(ann, (o) => o.pick.length === 10, 5000, 'own pick of 10');
+  const own = await awaitOwn(ann, (o) => o.pick.length === 15, 5000, 'own pick of 15');
   assert(own.pickLimit === 15, `expected pickLimit 15 for two players, got ${own.pickLimit}`);
   assert(own.words.length === 0, 'no words yet');
 
@@ -130,13 +140,13 @@ async function main(): Promise<void> {
   const valueTable = await awaitState(ann, (s) => s.phase === 'VALUE_TABLE', 8000, 'VALUE_TABLE');
   const table = valueTable.letterValues.entries.map((e: any) => `${e.letter}=${e.value}`).join(' ');
   console.log(`value table: ${table}`);
-  assert(valueTable.usableLetterCount === 10, `expected 10 usable letters, got ${valueTable.usableLetterCount}`);
+  assert(valueTable.usableLetterCount === 15, `expected 15 usable letters, got ${valueTable.usableLetterCount}`);
 
   const words = await awaitState(ann, (s) => s.phase === 'WORDS', 8000, 'WORDS');
   console.log(`WORDS phase, minimum length ${words.minWordLength}`);
 
   assert(!(await emit(ann, 'word:submit', { word: 'ZZZ' })).ok, 'junk word should be rejected');
-  assert(!(await emit(ann, 'word:submit', { word: 'ST' })).ok, 'short word should be rejected');
+  assert(!(await emit(ann, 'word:submit', { word: 'S' })).ok, 'single-letter word should be rejected');
   const annWord = await emit(ann, 'word:submit', { word: 'STORE' });
   assert(annWord.ok, `ann word failed: ${annWord.error}`);
   const dup = await emit(ann, 'word:submit', { word: 'STORE' });
