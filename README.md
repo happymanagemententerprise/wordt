@@ -42,23 +42,25 @@ npm run dev:tv         # just the TV client
 
 ## How to play
 
-**1. Pick letters.** Every player chooses up to a share of the alphabet. A letter
-only becomes *usable* when at least two players picked it. Two players get 15
-letters each, three or more get 10.
+**1. Pick letters.** Every player chooses up to a share of the alphabet. Two
+players get 15 letters each, three or more get 10. Letters that **two or more
+players picked** become the *overlap pool*; the computer tops the pool up to
+a fixed 15 letters with random letters nobody overlapped on.
 
-**2. Read the value table.** Usable letters are ranked by how many players picked
-them, ties broken by a fixed English frequency order. The letter at 0-based rank
-`i` of `n` usable letters is worth `floor(i * 5 / n) + 1`, so the most picked and
-most common letters are worth 1 and the rarest reach 5.
+**2. Read the value table.** Overlap letters are ranked by how many players
+picked them, ties broken by a fixed English frequency order — but consonants
+and vowels rank inside their own groups, so vowels never get expensive.
+Consonants spread over 5 tiers (1–5), vowels over 2 (1–2). Letters the
+computer added score their fixed Scrabble value instead.
 
 **3. Make words.** During the word phase every player types words built from
-usable letters. Letters may be reused inside a word. A word scores the sum of its
+pool letters. Letters may be reused inside a word. A word scores the sum of its
 letter values.
 
 A submission is rejected in this order, and the first failure wins:
 
-1. `TOO_SHORT` — shorter than 3 letters
-2. `UNUSABLE_LETTER` — contains a letter nobody picked twice
+1. `TOO_SHORT` — shorter than 2 letters
+2. `UNUSABLE_LETTER` — contains a letter outside the pool
 3. `DUPLICATE` — this player already submitted it
 4. `NOT_IN_DICTIONARY` — not in `shared/words.txt`
 
@@ -67,9 +69,11 @@ increments both *wrong tries* and *total tries*, which is what accuracy is
 measured against.
 
 **4. Review.** The round is scored on the server and the results are revealed one
-step at a time on the TV: unique words, then the stat bonuses, then any draft
-penalties, then the standings. While games run, the TV also shows a live feed of
-every accepted word and a progress bar for each player's letter pick.
+step at a time on the TV: unique words, then the stat bonuses, any draft
+penalties, then a **"words you missed"** step listing the highest-scoring words
+the pool could have made that nobody submitted, then the standings. While games
+run, the TV also shows a live feed of every accepted word and a progress bar for
+each player's letter pick.
 
 ### Scoring a round
 
@@ -99,19 +103,28 @@ round score = base score + shared-word penalty + draft penalty + bonuses
 
 The word the most players used is highlighted on the TV but scores nothing.
 
+### Setting a round length
+
+Before the game starts, the host picks how long the word phase lasts from the
+lobby (30s, 1m, 1m 30s, or 2m, or anything from 10 to 600 seconds). The game
+won't start until a length is chosen. Rounds within a game all use that length.
+`WORDT_WORD_SECONDS` remains the fallback for anything that isn't a live game.
+
 ### Playing with teams
 
-The host can turn **team mode** on in the lobby. Players are auto-split across two
-balanced teams (A and B), and anyone can tap a team card in the lobby to switch.
-Teams are capped at two members; the auto-split balances them when a new player
-joins or the mode is toggled.
+The host can turn **team mode** on in the lobby. Teams are always two members,
+and how many teams exist follows the player count: 3–4 players split into two
+teams (A, B), 5–6 into three (A–C), and 7–8 into the full four (A–D). A lone
+pair still gets two teams. The game accepts up to 8 players. Players are
+auto-split onto the emptiest team, and anyone can tap a team card in the lobby
+to switch.
 
 Teams play the same round but *as one competitor each*: two team members get five
 letters each (ten per team, to match the three-or-more-player share), cannot pick
 a letter a teammate already picked, and their scored words are merged and reported
-as a single team score. Standings then show **Team A** and **Team B** instead of
-individual rows, and the round review explains whose word earned each team its
-points.
+as a single team score. Standings then show **Team A**, **Team B**, and so on
+instead of individual rows, and the round review explains whose word earned each
+team its points.
 
 ### Ending the game
 
@@ -159,6 +172,7 @@ repo cache from connect time for exactly that reason.
 | `host:next`     | —                        | host  | results → next round            |
 | `host:lobby`    | —                        | host  | back to the lobby               |
 | `host:end`      | —                        | host  | end the game now → `GAME_OVER`  |
+| `host:timer`    | `{ seconds }`            | host  | set the round length (lobby)    |
 | `host:teams`    | `{ enabled }`            | host  | turn team mode on/off (lobby)   |
 | `team:set`      | `{ teamId }`             | phone | move your seat to a team (lobby)|
 | `review:next`   | —                        | host  | advance the review one step     |
@@ -181,13 +195,15 @@ repeating for each round, ending in `GAME_OVER`.
 Game rules are constants in `shared/src/config.ts`. Nothing else hard-codes one.
 
 Phase timers come from that file but the server can override them from the
-environment, which is what the tests use:
+environment, which is what the tests use. The word phase is set by the **host in
+the lobby** during a real game; `WORDT_WORD_SECONDS` only applies when no live
+game has picked one:
 
 | variable                    | default | meaning                              |
 | --------------------------- | ------- | ------------------------------------ |
 | `WORDT_PICK_SECONDS`        | 30      | letter picking                       |
 | `WORDT_VALUE_REVEAL_SECONDS`| 8       | how long the value table is shown    |
-| `WORDT_WORD_SECONDS`        | 120     | word entry                           |
+| `WORDT_WORD_SECONDS`        | 120     | fallback word phase length           |
 | `WORDT_REVIEW_STEP_SECONDS` | 6       | each step of the round review        |
 | `VITE_SERVER_URL`           | `http://localhost:3000` | where clients connect |
 | `VITE_PLAY_URL`             | `http://localhost:5173` | phone URL the TV's QR encodes |
@@ -199,14 +215,15 @@ The timers are read once at server start.
 ## Testing
 
 ```bash
-npm test                             # 48 scoring-engine unit tests
+npm test                             # 56 scoring-engine unit tests
 npm run typecheck                    # every workspace
 npm run smoke --workspace @wordt/server
 npm run e2e  --workspace @wordt/client-play
 ```
 
-The **unit tests** cover letter values, round scoring, bonuses, penalties,
-standings and the winner determination.
+The **unit tests** cover letter values, the letter pool, missed-word finding,
+round scoring, bonuses, penalties, standings, teams and the winner
+determination.
 
 The **smoke test** plays a full round through the real socket protocol: two
 players, one word phase, the review, and a second round with the score carried
@@ -235,40 +252,51 @@ Things the spec left open, and what this build does:
    bonus. The alternative (`false`) awards nobody on a tie; the lone-winner case
    is unaffected either way.
 5. **Host controls live on the host's phone**, not the TV: *Start game*,
-   *Next round*, *New game*, *Back to lobby*, and skipping ahead in the review.
-   The TV is display-only by design — it holds no player seat and cannot affect
-   the game. Review steps still auto-advance on their own timer.
+   *Next round*, *New game*, *Back to lobby*, picking the round length, and
+   skipping ahead in the review. The TV is display-only by design — it holds no
+   player seat and cannot affect the game. Review steps still auto-advance on
+   their own timer.
 6. **Pick limits** — 15 letters for two players, 10 for three or more. In team
    mode a member of a two-person team gets 5 (10 per team) and solo members of a
    single team get the normal share.
-7. **Teams** — mode is opt-in (host toggles it in the lobby), capped at two
-   players, and always exactly two teams. A team scores as one merged competitor;
-   its members share the same round score and a member's letter pick cannot
-   contain a letter a teammate already picked. The auto-split keeps the teams as
-   balanced as possible — odd player counts leave one team with a single member,
-   who gets the full solo share of letters.
+7. **Teams** — mode is opt-in (host toggles it in the lobby). Teams are always
+   two members; the *number* of teams follows the room: 2 teams at 3–4 players,
+   3 at 5–6, 4 at 7–8. A team scores as one merged competitor; its members share
+   the same round score and a member's letter pick cannot contain a letter a
+   teammate already picked. Players are auto-assigned to the emptiest team and
+   can tap a card in the lobby to switch.
 8. **Draft penalty** — 1 point per drafted letter that never appears in any
    submitted word, shown as its own review step only when at least one player
    earns it.
-9. **Room codes** are 5 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`
-   (no `I`, `O`, `0`, `1`, so they are readable aloud).
-10. **Empty rooms are deleted 5 minutes** after the last phone and the last TV
+9. **The letter pool is fixed at 15** — the overlap letters (picked by two+)
+   join random computer-added letters nobody overlapped on. Pool/value building
+   uses an injected RNG, so tests are deterministic; the server passes the
+   default (`Math.random`).
+10. **"Words you missed"** — a top-10 review step listing the highest-scoring
+   words formable from the pool that no player submitted. Computed on the server
+   by scanning the dictionary once per round; skipped when nothing qualifies.
+11. **Round length is a host choice** (10–600s, suggested 30/60/90/120) made in
+   the lobby before the game starts; the game cannot start without one. Picks
+   the first game's length, reused for every round until the room is recreated.
+12. **Room codes** are 5 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`
+    (no `I`, `O`, `0`, `1`, so they are readable aloud).
+13. **Empty rooms are deleted 5 minutes** after the last phone and the last TV
     disconnect, so a refresh can rejoin but abandoned rooms do not accumulate.
-11. **Rejoining** — a phone keeps its seat in `localStorage` under `wordt.seat`
+14. **Rejoining** — a phone keeps its seat in `localStorage` under `wordt.seat`
     and re-sends `room:join` with that id on reconnect. If the room is gone the
     seat is dropped and the player is returned to the join screen.
-12. **TV room entry** — `?room=CODE` in the URL, or typed into the on-screen
+15. **TV room entry** — `?room=CODE` in the URL, or typed into the on-screen
     form. The lobby QR encodes `<VITE_PLAY_URL>/?room=CODE` so a phone camera
     opens the join form with the code already filled in.
-13. **Letter values are recomputed per round** from that round's picks; they are
+16. **Letter values are recomputed per round** from that round's picks; they are
     not carried between rounds.
-14. **The legacy ASP.NET Core prototype** (`GameHub.cs`, `Program.cs`,
+17. **The legacy ASP.NET Core prototype** (`GameHub.cs`, `Program.cs`,
     `WordtGame.csproj`, `wwwroot/`) is still in the repository, untouched. It is
     not part of the Node build and nothing references it.
-15. **`npm audit` reports 3 advisories** (1 moderate, 2 critical), all inside the
+18. **`npm audit` reports 3 advisories** (1 moderate, 2 critical), all inside the
     `vitest` toolchain, which is development-only and not shipped to players.
     The fix requires a major `vitest` upgrade, so it was left alone rather than
     churn a passing test suite. Worth revisiting before this handles untrusted
     input.
-16. **TypeScript stays on 5.x.** The registry's latest is 7.x; 5.7 is what the
+19. **TypeScript stays on 5.x.** The registry's latest is 7.x; 5.7 is what the
     whole repo is pinned to.
