@@ -344,6 +344,40 @@ io.on('connection', (socket: Socket) => {
     ack({ ok: true });
   });
 
+  on<Record<string, never>, ActionAck>(socket, 'room:leave', (_payload, ack) => {
+    const session = sessions.get(socket.id);
+    if (!session?.playerId) {
+      ack({ ok: false, error: 'You are not in a room.' });
+      return;
+    }
+    const entry = rooms.get(session.roomCode);
+    const room = entry?.room;
+    const player = room?.players.get(session.playerId);
+    if (!entry || !room || !player) {
+      ack({ ok: false, error: 'That room no longer exists.' });
+      return;
+    }
+
+    // The host leaving ends the whole session: everyone is returned to their
+    // own entry screens and the room is taken off the map.
+    if (player.isHost && player.connected) {
+      rooms.delete(room.code);
+      room.destroy();
+      io.to(room.code).emit('room:ended');
+      ack({ ok: true });
+      console.log(`[wordt] room ${room.code} ended by the host leaving`);
+      return;
+    }
+
+    // Anyone else just frees their seat; the room carries on.
+    room.players.delete(session.playerId);
+    sessions.delete(socket.id);
+    socket.leave(room.code);
+    room.emitState();
+    maybeCleanup(room.code, entry);
+    ack({ ok: true });
+  });
+
   on<{ enabled?: unknown }, ActionAck>(socket, 'host:teams', (payload, ack) => {
     const ctx = requirePlayer(socket);
     if (!ctx.ok) {
