@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
-import type { LetterValueTable, Phase, PublicPlayer } from '@wordt/shared';
+import type { LetterValueTable, Phase, PublicPlayer, PublicRoomState } from '@wordt/shared';
 
 function secondsLeft(endsAt: number | null): number | null {
   if (endsAt === null) return null;
@@ -31,6 +31,58 @@ export function Countdown({ endsAt, hint }: { endsAt: number | null; hint?: stri
   );
 }
 
+/** Big semi-transparent clock for the corner of the TV while a phase runs. */
+export function TimeWatermark({ state }: { state: PublicRoomState }): ReactNode {
+  const seconds = useCountdown(state.phaseEndsAt);
+  if (seconds === null) return null;
+  const clock = seconds >= 60 ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}` : String(seconds);
+  return (
+    <div className={`tv-watermark${seconds <= 10 ? ' tv-watermark--urgent' : ''}`} aria-hidden="true">
+      <span className="tv-watermark__value">{clock}</span>
+      <span className="tv-watermark__unit">left</span>
+    </div>
+  );
+}
+
+export function Crown({ podium = false }: { podium?: boolean }): ReactNode {
+  return (
+    <svg className={`tv-crown${podium ? ' tv-crown--big' : ''}`} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2.5 7.6 7 12l5-7.6 5 7.6 4.5-4.4-1.9 11.3H4.4L2.5 7.6Z" />
+    </svg>
+  );
+}
+
+/** Split battle bar showing each team's live share of the total score. */
+export function WarBar({ state }: { state: PublicRoomState }): ReactNode {
+  const teams = state.teams ?? [];
+  if (!state.teamsEnabled || teams.length < 2) return null;
+
+  const total = teams.reduce((sum, team) => sum + team.score, 0);
+  return (
+    <div className="tv-warbar" aria-label="Team scores">
+      <div className="tv-warbar__labels">
+        {teams.map((team) => (
+          <span key={team.id} className={`tv-warbar__label tv-team-text--${team.id}`}>
+            {team.name}
+            <b key={team.score} className="tv-warbar__score">
+              {team.score}
+            </b>
+          </span>
+        ))}
+      </div>
+      <div className="tv-warbar__track">
+        {teams.map((team) => (
+          <span
+            key={team.id}
+            className={`tv-warbar__seg tv-warbar__seg--${team.id}`}
+            style={{ width: `${total === 0 ? 100 / teams.length : (team.score / total) * 100}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const PHASE_LABELS: Record<Phase, string> = {
   LOBBY: 'Lobby',
   PICKING: 'Pick letters',
@@ -50,25 +102,32 @@ export function Standings({
   players,
   teamLabel,
   showStats = false,
+  rankChange,
 }: {
   players: PublicPlayer[];
   /** For a team row ("A"/"B"), the names of its members. */
   teamLabel?: (id: string) => string | null;
   showStats?: boolean;
+  /** Rank movement since the last round, keyed by row id. */
+  rankChange?: Map<string, number>;
 }): ReactNode {
   return (
     <ol className="tv-standings">
       {players.map((player, index) => {
         const isTeam = player.teamId === player.id;
         const members = isTeam && teamLabel ? teamLabel(player.id) : null;
+        const move = rankChange?.get(player.id) ?? 0;
         return (
           <li
             key={player.id}
             style={{ '--i': index } as CSSProperties}
-            className={`tv-standing${isTeam ? ` tv-team--${player.teamId}` : ''}`}
+            className={`tv-standing${index === 0 ? ' tv-standing--leader' : ''}${
+              isTeam ? ` tv-team--${player.teamId}` : ''
+            }`}
           >
             <span className="tv-standing__rank">{index + 1}</span>
             <span className="tv-standing__name">
+              {index === 0 ? <Crown /> : null}
               {player.name}
               {player.isHost ? <span className="tv-tag">host</span> : null}
               {!player.connected ? <span className="tv-tag tv-tag--away">offline</span> : null}
@@ -77,6 +136,11 @@ export function Standings({
             {showStats ? (
               <span className="tv-standing__stats">
                 {player.validWordCount} words · {player.totalTries - player.wrongTries}/{player.totalTries || 0} correct
+              </span>
+            ) : null}
+            {move !== 0 ? (
+              <span className={`tv-standing__move tv-standing__move--${move > 0 ? 'up' : 'down'}`}>
+                {move > 0 ? `▲${move}` : `▼${-move}`}
               </span>
             ) : null}
             <span className="tv-standing__score">{player.score}</span>

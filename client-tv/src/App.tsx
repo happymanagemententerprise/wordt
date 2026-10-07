@@ -10,7 +10,7 @@ import { Review } from './screens/Review';
 import { RoomEntry } from './screens/RoomEntry';
 import { Rules } from './screens/Rules';
 import { ValueTableScreen, Words } from './screens/ValueTable';
-import { phaseLabel } from './ui';
+import { TimeWatermark, WarBar, phaseLabel } from './ui';
 
 function Centered({ title, detail }: { title: string; detail?: string }): ReactNode {
   return (
@@ -72,7 +72,9 @@ export default function App(): ReactNode {
         </span>
         <span className="tv-pill tv-pill--phase">{phaseLabel(state.phase)}</span>
       </header>
+      <WarBar state={state} />
       <main className="tv-content">{renderPhase(state)}</main>
+      <TimeWatermark state={state} />
     </div>
   );
 }

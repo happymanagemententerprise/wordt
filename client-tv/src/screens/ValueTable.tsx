@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { PublicRoomState } from '@wordt/shared';
 
+import { feedStreaks } from '../scoreboard';
 import { Countdown, ValueTable } from '../ui';
 
 export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNode {
@@ -26,6 +27,7 @@ export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNo
 export function Words({ state }: { state: PublicRoomState }): ReactNode {
   const total = state.players.reduce((sum, player) => sum + player.validWordCount, 0);
   const feed = state.feed ?? [];
+  const streaks = feedStreaks(feed);
   const labelOf = (item: { playerName: string; teamName: string | null }) =>
     item.teamName ? `${item.teamName} · ${item.playerName}` : item.playerName;
 
@@ -64,16 +66,30 @@ export function Words({ state }: { state: PublicRoomState }): ReactNode {
             <p className="tv-hint">No words yet.</p>
           ) : (
             <ol className="tv-feed__list">
-              {[...feed].reverse().map((item, index) => (
-                <li
-                  key={index === 0 ? `fresh-${feed.length}` : `${item.word}-${item.playerId}-${index}`}
-                  className={`tv-feed__item${index === 0 ? ' tv-feed__item--new' : ''}`}
-                >
-                  <span className="tv-feed__word">{item.word}</span>
-                  <span className="tv-feed__who">{labelOf(item)}</span>
-                  <span className="tv-feed__points">+{item.score}</span>
-                </li>
-              ))}
+              {[...feed].reverse().map((item, index) => {
+                const chronological = feed.length - 1 - index;
+                const streak = streaks[chronological] ?? 1;
+                const endsRun =
+                  chronological === feed.length - 1 ||
+                  feed[chronological + 1]?.playerId !== item.playerId;
+                const big = item.score >= 10;
+                return (
+                  <li
+                    key={index === 0 ? `fresh-${feed.length}` : `${item.word}-${item.playerId}-${index}`}
+                    className={`tv-feed__item${index === 0 ? ' tv-feed__item--new' : ''}${
+                      big ? ' tv-feed__item--big' : ''
+                    }`}
+                  >
+                    <span className="tv-feed__word">{item.word}</span>
+                    <span className="tv-feed__who">{labelOf(item)}</span>
+                    {endsRun && streak >= 3 ? (
+                      <span className="tv-feed__streak">{streak} in a row</span>
+                    ) : null}
+                    {big ? <span className="tv-feed__tag">big word</span> : null}
+                    <span className="tv-feed__points">+{item.score}</span>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </aside>

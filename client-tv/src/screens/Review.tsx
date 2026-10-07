@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 
 import type { PublicRoomState, ReviewStep } from '@wordt/shared';
 
+import { rankChanges } from '../scoreboard';
 import { Standings } from '../ui';
 
 function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): ReactNode {
@@ -73,7 +74,7 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
       );
     }
     case 'leaderboard':
-      return <Standings players={state.standings} teamLabel={memberNames} />;
+      return <Standings players={state.standings} teamLabel={memberNames} rankChange={rankChanges(state)} />;
   }
 }
 
