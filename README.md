@@ -42,6 +42,9 @@ npm run dev:tv         # just the TV client
 
 ## How to play
 
+These rules are printed on-screen too: the phone client has a *How to play* link
+above its join form, and the TV client has one on its room-code entry page.
+
 **1. Pick letters.** Every player chooses up to a share of the alphabet. Two
 players get 15 letters each, three or more get 10. Letters that **two or more
 players picked** become the *overlap pool*; the computer tops the pool up to
