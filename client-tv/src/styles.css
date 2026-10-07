@@ -548,6 +548,57 @@ h2 {
   font-weight: 800;
 }
 
+.tv-reveal--missed {
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+.tv-reveal__sub {
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+  color: var(--muted);
+}
+
+.tv-missed {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.6vw, 1.6rem);
+  width: 100%;
+}
+
+.tv-missed__col {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.tv-missed__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.5rem, 1vw, 1rem) clamp(0.75rem, 1.4vw, 1.4rem);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.tv-missed__word {
+  font-size: clamp(1.2rem, 2.2vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.tv-missed__points {
+  color: var(--good);
+  font-weight: 800;
+  font-size: clamp(1rem, 1.8vw, 1.8rem);
+  font-variant-numeric: tabular-nums;
+}
+
 /* --------------------------------------------------------------- standings */
 
 .tv-standings {
@@ -712,13 +763,15 @@ h2 {
   height: 100%;
   border-radius: 999px;
   background: var(--accent);
-  transition: width 0.25s ease;
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.tv-pick__letters {
-  font-size: clamp(1rem, 1.4vw, 1.5rem);
-  letter-spacing: 0.15em;
-  font-weight: 700;
+.tv-pick--locked .tv-pick__bar-fill {
+  background: var(--good);
+}
+
+.tv-pick__state--locked {
+  color: var(--good);
 }
 
 /* ------------------------------------------------------------- words board */
@@ -939,5 +992,103 @@ h2 {
 @media (max-width: 70rem) {
   .tv-rules__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------- motion */
+
+.tv-screen,
+.tv-stage,
+.tv-splash {
+  animation: tv-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tv-standings .tv-standing,
+.tv-values .tv-value,
+.tv-picks .tv-pick,
+.tv-missed__row,
+.tv-review-step {
+  animation: tv-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+.tv-reveal__word {
+  animation: tv-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tv-countdown--urgent {
+  animation: tv-urgent 0.9s ease-in-out infinite;
+}
+
+.tv-dot--on {
+  animation: tv-glow 1.8s ease-in-out infinite;
+}
+
+.tv-word--ok,
+.tv-word--miss {
+  animation: tv-pop 0.25s ease both;
+}
+
+.tv-standings--round .tv-standing,
+.tv-standings--round .tv-standings-list .tv-standing-entry {
+  animation: tv-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tv-board-row {
+  transition: background 0.25s ease;
+}
+
+.tv-feedback {
+  animation: tv-rise 0.3s ease both;
+}
+
+@keyframes tv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tv-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tv-urgent {
+  from {
+    color: var(--accent);
+  }
+  to {
+    color: var(--bad);
+  }
+}
+
+@keyframes tv-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 0.5rem rgba(255, 209, 102, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

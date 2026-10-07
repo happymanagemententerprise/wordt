@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import type { PublicRoomState, ReviewStep } from '@wordt/shared';
 
@@ -50,12 +50,25 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
       );
     }
     case 'missed_words': {
-      const best = step.words.slice(0, 3).map((word) => `${word.word} +${word.points}`).join(' · ');
+      const columns = [step.words.slice(0, 5), step.words.slice(5, 10)];
       return (
-        <div className="tv-reveal">
+        <div className="tv-reveal tv-reveal--missed">
           <p className="tv-eyebrow">Words you missed</p>
-          <p className="tv-reveal__word">{step.words.length} formable from the pool</p>
-          <p className="tv-reveal__who">{best}</p>
+          <p className="tv-reveal__sub">
+            the {step.words.length} best words the pool could make, nobody found them
+          </p>
+          <div className="tv-missed">
+            {columns.map((column, index) => (
+              <ul key={index} className="tv-missed__col">
+                {column.map((missed, row) => (
+                  <li key={missed.word} className="tv-missed__row" style={{ '--i': index * 5 + row } as CSSProperties}>
+                    <span className="tv-missed__word">{missed.word}</span>
+                    <span className="tv-missed__points">+{missed.points}</span>
+                  </li>
+                ))}
+              </ul>
+            ))}
+          </div>
         </div>
       );
     }
@@ -93,7 +106,7 @@ export function Review({ state }: { state: PublicRoomState }): ReactNode {
         ) : null}
       </header>
 
-      {step ? <Reveal step={step} state={state} /> : <Standings players={state.standings} teamLabel={memberNames} />}
+      {step ? <Reveal key={state.reviewIndex} step={step} state={state} /> : <Standings players={state.standings} teamLabel={memberNames} />}
     </section>
   );
 }

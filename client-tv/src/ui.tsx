@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import type { LetterValueTable, Phase, PublicPlayer } from '@wordt/shared';
 
@@ -64,6 +64,7 @@ export function Standings({
         return (
           <li
             key={player.id}
+            style={{ '--i': index } as CSSProperties}
             className={`tv-standing${isTeam ? ` tv-team--${player.teamId}` : ''}`}
           >
             <span className="tv-standing__rank">{index + 1}</span>
@@ -92,10 +93,14 @@ export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
   }
   return (
     <div className="tv-values">
-      {table.entries.map((entry) => {
+      {table.entries.map((entry, index) => {
         const added = table.source[entry.letter] === 'added';
         return (
-          <div key={entry.letter} className={`tv-value${added ? ' tv-value--added' : ''}`}>
+          <div
+            key={entry.letter}
+            className={`tv-value${added ? ' tv-value--added' : ''}`}
+            style={{ '--i': index } as CSSProperties}
+          >
             <span className={`tv-value__letter lv-${Math.min(5, Math.max(1, entry.value))}`}>{entry.letter}</span>
             <span className="tv-value__count">{added ? 'computer' : `${entry.count} picked`}</span>
             <span className="tv-value__points">{entry.value} pt</span>

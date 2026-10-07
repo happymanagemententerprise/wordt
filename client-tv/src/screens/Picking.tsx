@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import type { PublicRoomState } from '@wordt/shared';
 
@@ -22,13 +22,14 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
       </p>
 
       <ul className="tv-picks">
-        {state.players.map((player) => {
+        {state.players.map((player, index) => {
           const limit = player.pickLimit ?? state.pickLimit;
           const percent = limit === 0 ? 0 : Math.round((player.pickCount / limit) * 100);
           const isTeam = player.teamId === player.id;
           return (
             <li
               key={player.id}
+              style={{ '--i': index } as CSSProperties}
               className={`tv-pick${player.pickedLocked ? ' tv-pick--locked' : ''}${
                 !isTeam && player.teamId ? ` tv-team--${player.teamId}` : ''
               }`}
@@ -45,8 +46,9 @@ export function Picking({ state }: { state: PublicRoomState }): ReactNode {
               <span className="tv-pick__count">
                 {player.pickCount}/{limit}
               </span>
-              <span className="tv-pick__letters">{player.pick.join(' ') || '—'}</span>
-              <span className="tv-pick__state">{player.pickedLocked ? 'Locked in' : 'Picking…'}</span>
+              <span className={`tv-pick__state${player.pickedLocked ? ' tv-pick__state--locked' : ''}`}>
+                {player.pickedLocked ? 'Locked in' : 'Picking…'}
+              </span>
             </li>
           );
         })}
