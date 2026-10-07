@@ -14,6 +14,7 @@ export {
   type Rng,
 } from './letterPool';
 export { validateWord, normalizeWord, defaultWordContext } from './validate';
+export { HOW_TO_PLAY, type RulesSection } from './rules';
 export { teamName, mergeTeam, lettersPerTeamMember, teamIdsForPlayerCount, validTeamId } from './teams';
 export {
   scoreRound,
