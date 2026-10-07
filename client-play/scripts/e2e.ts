@@ -206,6 +206,16 @@ async function main(): Promise<void> {
     assert(/Round 2\//.test(roundPill), `expected the round two pill, saw "${roundPill}"`);
     console.log(`round 2 started (${roundPill})`);
 
+    // End the game as the host, then leave the room: every screen should land
+    // back on its own home page.
+    await ann.page.getByRole('button', { name: 'End game', exact: true }).click();
+    await ann.page.getByRole('heading', { name: 'Final results' }).waitFor({ state: 'visible', timeout: 15000 });
+    await ann.page.getByRole('button', { name: 'Leave room', exact: true }).click();
+    await ann.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible', timeout: 15000 });
+    await bob.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible', timeout: 15000 });
+    await tv.locator('.tv-entry__input').waitFor({ state: 'visible', timeout: 15000 });
+    console.log('ending the session returned every screen to its home page');
+
     if (pageErrors.length > 0) {
       throw new Error(`browser reported errors:\n  ${pageErrors.join('\n  ')}`);
     }

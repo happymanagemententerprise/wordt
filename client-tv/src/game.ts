@@ -28,6 +28,12 @@ function remember(code: string): void {
   window.history.replaceState({}, '', url);
 }
 
+function forget(): void {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('room');
+  window.history.replaceState({}, '', url);
+}
+
 export interface TvApi {
   connected: boolean;
   watching: boolean;
@@ -80,10 +86,17 @@ export function useTv(): TvApi {
       rewatch();
     };
     const onDisconnect = () => setConnected(false);
+    const onRoomEnded = () => {
+      setError('That room ended, so the big screen was released.');
+      setRoomCode(null);
+      setState(null);
+      forget();
+    };
 
     socket.on('state', onState);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('room:ended', onRoomEnded);
     if (socket.connected) {
       setConnected(true);
       rewatch();
@@ -92,6 +105,7 @@ export function useTv(): TvApi {
       socket.off('state', onState);
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('room:ended', onRoomEnded);
     };
   }, [rewatch]);
 

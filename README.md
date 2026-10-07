@@ -134,6 +134,11 @@ team its points.
 The host's phone has an *End game* button at any time during play; it finishes the
 current round, jumps straight to `GAME_OVER`, and shows final standings.
 
+Anyone can then tap *Leave room* to return to their home page. If the **host**
+leaves, the whole session ends: every phone and the TV is sent back to its entry
+screen and the room is deleted. If anyone else leaves, only their seat is freed
+and the game carries on without them.
+
 Rounds repeat for `ROUNDS` (3). Final standings are ordered by score, then by
 total valid words; players still level share the win.
 
@@ -182,11 +187,13 @@ repo cache from connect time for exactly that reason.
 | `pick:set`      | `{ letters }`            | phone | set this player's pick          |
 | `pick:lock`     | —                        | phone | lock this player's pick         |
 | `word:submit`   | `{ word }`               | phone | submit a word                   |
+| `room:leave`    | —                        | phone | leave the room. The host leaving ends the whole session |
 
 server → client:
 
 - `state` — `PublicRoomState`, the room as everyone sees it
 - `own` — `OwnState`, only to the player the seat belongs to
+- `room:ended` — the session is over (the host left); every client returns home
 
 Phases: `LOBBY → PICKING → VALUE_TABLE → WORDS → NOTICE → REVIEW → RESULTS`,
 repeating for each round, ending in `GAME_OVER`.
@@ -234,8 +241,10 @@ over. It needs the server running.
 
 The **e2e test** launches real Chrome through Playwright and drives two phone
 windows *and* the TV through a complete round, asserting what each screen shows.
-It needs the server and both dev servers running. It is deliberately generous
-about phase timers, so it works with whatever `WORDT_*_SECONDS` you are running.
+It also ends the game from the final results and checks that leaving the session
+returns every screen to its home page. It needs the server and both dev servers
+running. It is deliberately generous about phase timers, so it works with
+whatever `WORDT_*_SECONDS` you are running.
 
 On Windows, `npm` is blocked by execution policy — use `npm.cmd`.
 
