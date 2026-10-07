@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import type { LetterValueTable, PublicPlayer } from '@wordt/shared';
 
@@ -69,27 +69,42 @@ export function Standings({
   players,
   activeId,
   showStats = false,
+  onMakeHost,
 }: {
   players: PublicPlayer[];
   activeId?: string;
   showStats?: boolean;
+  onMakeHost?: (playerId: string) => void;
 }): ReactNode {
   return (
     <ol className="standings">
       {players.map((player, index) => (
         <li
           key={player.id}
+          style={{ '--i': index } as CSSProperties}
           className={`standing${player.id === activeId ? ' standing--you' : ''}${player.connected ? '' : ' standing--away'}`}
         >
           <span className="standing__rank">{index + 1}</span>
           <span className="standing__name">
             {player.name}
-            {player.isHost ? <span className="tag">host</span> : null}
+            {player.isHost ? <span className="tag tag--host">host</span> : null}
             {player.teamId && player.teamId !== player.id ? (
               <span className="tag tag--team">{player.teamId}</span>
             ) : null}
             {!player.connected ? <span className="tag tag--away">offline</span> : null}
           </span>
+          {onMakeHost && !player.isHost && player.connected ? (
+            <span className="standing__actions">
+              <button
+                className="make-host"
+                type="button"
+                aria-label={`Make ${player.name} host`}
+                onClick={() => onMakeHost(player.id)}
+              >
+                Host
+              </button>
+            </span>
+          ) : null}
           {showStats ? (
             <span className="standing__stats">
               {player.validWordCount} words · {player.totalTries} tries
@@ -108,10 +123,10 @@ export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
   }
   return (
     <div className="value-table">
-      {table.entries.map((entry) => {
+      {table.entries.map((entry, index) => {
         const added = table.source[entry.letter] === 'added';
         return (
-          <div key={entry.letter} className="value-row">
+          <div key={entry.letter} className="value-row" style={{ '--i': index } as CSSProperties}>
             <span className={`value-letter value-${Math.min(5, Math.max(1, entry.value))}`}>
               {entry.letter}
             </span>

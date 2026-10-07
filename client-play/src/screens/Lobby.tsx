@@ -37,7 +37,14 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
       <h3 className="subhead">
         Players <span className="count">{connectedPlayers}/{state.maxPlayers}</span>
       </h3>
-      <Standings players={state.players} activeId={own.id} />
+      <Standings
+        players={state.players}
+        activeId={own.id}
+        onMakeHost={own.isHost ? (targetId) => void game.transferHost(targetId) : undefined}
+      />
+      {own.isHost ? (
+        <p className="hint">Tap Host on any player to hand control over before you leave.</p>
+      ) : null}
 
       {state.teamsEnabled ? (
         <>

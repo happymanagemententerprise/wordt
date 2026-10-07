@@ -84,6 +84,7 @@ export interface GameApi {
   setTeamsEnabled: (enabled: boolean) => Promise<Ack>;
   setRoundSeconds: (seconds: number) => Promise<Ack>;
   setTeam: (teamId: string) => Promise<Ack>;
+  transferHost: (playerId: string) => Promise<Ack>;
   setPick: (letters: string[]) => Promise<Ack>;
   lockPick: () => Promise<Ack>;
   submitWord: (word: string) => Promise<Ack>;
@@ -222,6 +223,7 @@ export function useGame(): GameApi {
     setTeamsEnabled: (enabled) => guarded('host:teams', { enabled }),
     setRoundSeconds: (seconds) => guarded('host:timer', { seconds }),
     setTeam: (teamId) => guarded('team:set', { teamId }),
+    transferHost: (playerId) => guarded('host:transfer', { playerId }),
     setPick: (letters) => ask('pick:set', { letters }),
     lockPick: () => guarded('pick:lock'),
     submitWord: (word) => ask('word:submit', { word }),
