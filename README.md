@@ -78,6 +78,12 @@ the pool could have made that nobody submitted, then the standings. While games
 run, the TV also shows a live feed of every accepted word and a progress bar for
 each player's letter pick.
 
+The TV plays like a game show: pool letters sit on bright contrasting tiles, a
+semi-transparent clock counts the phase down in the corner, the standings crown
+the current leader and mark rank moves (▲/▼), team play gets a split battle bar
+under the top bar, the live feed flags hot streaks and big words, and the final
+results land on a podium with medals and confetti.
+
 ### Scoring a round
 
 ```

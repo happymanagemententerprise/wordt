@@ -157,6 +157,8 @@ async function main(): Promise<void> {
     await tv.locator('.tv-pick').nth(1).waitFor({ state: 'visible' });
     const tvPicks = await tv.locator('.tv-pick').count();
     assert(tvPicks === 2, `expected the TV to track 2 pickers, saw ${tvPicks}`);
+    await tv.locator('.tv-watermark').waitFor({ state: 'visible' });
+    console.log('the TV watermark counts down during play');
     await pickLetters(ann.page);
     await pickLetters(bob.page);
     console.log('both players picked fifteen letters');
@@ -208,6 +210,10 @@ async function main(): Promise<void> {
     await tv.getByRole('heading', { name: 'Round 1 results' }).waitFor({ state: 'visible', timeout: 15000 });
     const tvStandings = await tv.locator('.tv-standing').count();
     assert(tvStandings === 2, `expected the TV to show 2 standings, saw ${tvStandings}`);
+    const tvLeaders = await tv.locator('.tv-standing--leader').count();
+    assert(tvLeaders === 1, `expected exactly one TV leader, saw ${tvLeaders}`);
+    const tvCrowns = await tv.locator('.tv-crown').count();
+    assert(tvCrowns >= 1, `expected a crown on the TV leaderboard, saw ${tvCrowns}`);
     console.log('walked the review through to the round results on both screens');
 
     await ann.page.locator('.standing--you').waitFor({ state: 'visible' });
@@ -224,6 +230,11 @@ async function main(): Promise<void> {
     // back on its own home page.
     await ann.page.getByRole('button', { name: 'End game', exact: true }).click();
     await ann.page.getByRole('heading', { name: 'Final results' }).waitFor({ state: 'visible', timeout: 15000 });
+    await tv.locator('.tv-podium').waitFor({ state: 'visible', timeout: 15000 });
+    const podiumCols = await tv.locator('.tv-podium__col').count();
+    assert(podiumCols === 2, `expected the TV podium to seat 2 players, saw ${podiumCols}`);
+    await tv.locator('.tv-confetti').waitFor({ state: 'visible' });
+    console.log('the TV crowned a podium with confetti');
     await ann.page.getByRole('button', { name: 'Leave room', exact: true }).click();
     await ann.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible', timeout: 15000 });
     await bob.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible', timeout: 15000 });
