@@ -114,6 +114,20 @@ async function main(): Promise<void> {
     await bob.page.locator('.standing').nth(1).waitFor({ state: 'visible' });
     console.log('both players are in the lobby');
 
+    await ann.page.getByRole('button', { name: 'Make Bob host' }).click();
+    await bob.page.getByRole('button', { name: 'Start game' }).waitFor({ state: 'visible' });
+    assert(
+      (await ann.page.getByRole('button', { name: 'Start game' }).count()) === 0,
+      'Ann should lose the Start game button after handing the host crown to Bob',
+    );
+    await bob.page.getByRole('button', { name: 'Make Ann host' }).click();
+    await ann.page.getByRole('button', { name: 'Start game' }).waitFor({ state: 'visible' });
+    assert(
+      (await bob.page.getByRole('button', { name: 'Start game' }).count()) === 0,
+      'Bob should lose the Start game button after handing the host crown back to Ann',
+    );
+    console.log('host crown passes between players and back');
+
     const tvRulesContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
     const tvRulesPage = await tvRulesContext.newPage();
     watch(tvRulesPage, 'TV rules');

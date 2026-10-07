@@ -139,6 +139,10 @@ leaves, the whole session ends: every phone and the TV is sent back to its entry
 screen and the room is deleted. If anyone else leaves, only their seat is freed
 and the game carries on without them.
 
+The host can hand the crown to any connected player at any time by tapping
+*Host* on their row in the lobby. After a transfer the new host owns the Start/End
+controls for the rest of the session.
+
 Rounds repeat for `ROUNDS` (3). Final standings are ordered by score, then by
 total valid words; players still level share the win.
 
@@ -184,6 +188,7 @@ repo cache from connect time for exactly that reason.
 | `host:teams`    | `{ enabled }`            | host  | turn team mode on/off (lobby)   |
 | `team:set`      | `{ teamId }`             | phone | move your seat to a team (lobby)|
 | `review:next`   | —                        | host  | advance the review one step     |
+| `host:transfer` | `{ playerId }`           | host  | hand the host crown to another connected player |
 | `pick:set`      | `{ letters }`            | phone | set this player's pick          |
 | `pick:lock`     | —                        | phone | lock this player's pick         |
 | `word:submit`   | `{ word }`               | phone | submit a word                   |
