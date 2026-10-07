@@ -1,9 +1,25 @@
-import { TEAM_LETTERS_TOTAL, TEAM_NAMES, type TeamId } from './config';
+import { MAX_TEAMS, TEAM_NAMES, TEAM_SIZE, TEAM_LETTERS_TOTAL } from './config';
 import type { Letter, RoundPlayerInput } from './types';
 
 /** Display name for a team id, falling back to a readable guess. */
 export function teamName(teamId: string): string {
-  return TEAM_NAMES[teamId as TeamId] ?? `Team ${teamId}`;
+  return TEAM_NAMES[teamId] ?? `Team ${teamId}`;
+}
+
+/**
+ * The team ids that exist for `playerCount` players. Teams are always exactly
+ * `TEAM_SIZE` players, so the game splits into `ceil(n / 2)` teams — two teams
+ * for 3-4 players, three for 5-6, and the maximum of four at 7-8. A lone pair
+ * still gets two teams so none of this is observable with a two-player game.
+ */
+export function teamIdsForPlayerCount(playerCount: number): string[] {
+  const teams = Math.min(MAX_TEAMS, Math.max(2, Math.ceil(playerCount / TEAM_SIZE)));
+  return Array.from({ length: teams }, (_, index) => String.fromCharCode(65 + index));
+}
+
+/** Whether `teamId` exists for a room with `playerCount` players. */
+export function validTeamId(teamId: string, playerCount: number): boolean {
+  return teamIdsForPlayerCount(playerCount).includes(teamId);
 }
 
 /**

@@ -1,12 +1,20 @@
 export * from './config';
 export * from './types';
 export {
-  computeLetterValues,
   scoreWord,
   countPick,
 } from './letterValues';
+export {
+  computeLetterValues,
+  buildPool,
+  overlapLetters,
+  SCRABBLE_VALUES,
+  isVowel,
+  type BuiltPool,
+  type Rng,
+} from './letterPool';
 export { validateWord, normalizeWord, defaultWordContext } from './validate';
-export { teamName, mergeTeam, lettersPerTeamMember } from './teams';
+export { teamName, mergeTeam, lettersPerTeamMember, teamIdsForPlayerCount, validTeamId } from './teams';
 export {
   scoreRound,
   sortStandings,

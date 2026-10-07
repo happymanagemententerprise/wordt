@@ -30,12 +30,14 @@ export interface LetterValueEntry {
 }
 
 export interface LetterValueTable {
-  /** Usable letters only (count >= USABLE_MIN_COUNT), sorted best rank first. */
+  /** The full pool (overlap + computer top-up), best value first. */
   entries: LetterValueEntry[];
   /** Quick lookup: letter -> value. */
   values: Record<Letter, number>;
-  /** Letter -> pick count, usable letters only. */
+  /** Letter -> pick count; 0 for computer-added letters. */
   counts: Record<Letter, number>;
+  /** Where each letter came from, for the value table presentation. */
+  source: Record<Letter, 'overlap' | 'added'>;
 }
 
 export interface WordCheckContext {
@@ -135,6 +137,12 @@ export interface DraftPenaltyEntry {
   points: number;
 }
 
+/** A word nobody submitted that the pool could have made, for the reveal. */
+export interface MissedWord {
+  word: string;
+  points: number;
+}
+
 export interface RoundResult {
   players: PlayerRoundResult[];
   /** Words submitted by exactly one player. */
@@ -144,6 +152,8 @@ export interface RoundResult {
   statAwards: StatAward[];
   /** Only the units that actually lost points to the draft penalty. */
   draftPenalties: DraftPenaltyEntry[];
+  /** Best words formable from the pool that nobody submitted; server-filled. */
+  missedWords?: MissedWord[];
 }
 
 /** One player's live record in a room. */
@@ -171,6 +181,7 @@ export type ReviewStep =
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }
   | { kind: 'draft_penalty'; entries: DraftPenaltyEntry[] }
+  | { kind: 'missed_words'; words: MissedWord[] }
   | { kind: 'leaderboard' };
 
 export interface PublicPlayer {
@@ -186,6 +197,8 @@ export interface PublicPlayer {
   isHost: boolean;
   /** Team this player belongs to, or null in free-for-all play. */
   teamId: string | null;
+  /** How many letters this player may pick this round (varies on teams). */
+  pickLimit: number;
   /** Letters picked so far this round; shared so teammates do not double up. */
   pick: Letter[];
 }
@@ -222,11 +235,15 @@ export interface PublicRoomState {
   hostId: PlayerId | null;
   /** Present from VALUE_TABLE onwards. */
   letterValues: LetterValueTable | null;
-  /** Present from WORDS onwards: how many usable letters exist. */
+  /** Present from VALUE_TABLE onwards: the fixed pool size. */
   usableLetterCount: number;
   minWordLength: number;
   pickLimit: number;
   timers: { pick: number; word: number };
+  /** The word-phase length the host chose, or null before they pick one. */
+  roundSeconds: number | null;
+  /** Maximum number of players a room accepts. */
+  maxPlayers: number;
   lastRoundResult: RoundResult | null;
   finalStandings: PublicPlayer[] | null;
   notice: string | null;

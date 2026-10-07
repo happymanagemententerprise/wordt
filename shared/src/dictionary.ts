@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ALLOW_LETTER_REUSE_IN_WORD, MIN_WORD_LENGTH } from './config';
-import { computeLetterValues, countPick } from './letterValues';
+import { countPick, scoreWord } from './letterValues';
+import { computeLetterValues } from './letterPool';
 import { validateWord } from './validate';
 import type {
   Letter,
@@ -11,6 +12,7 @@ import type {
   ValidationResult,
   WordCheckContext,
 } from './types';
+export { computeLetterValues, countPick };
 
 const WORDS_FILE = join(dirname(fileURLToPath(import.meta.url)), '..', 'words.txt');
 
@@ -63,4 +65,53 @@ export function checkWordAttempt(
   return { result, word, score };
 }
 
-export { computeLetterValues, countPick };
+/** A word that was formable from the round's pool but that nobody submitted. */
+export interface MissedWord {
+  word: string;
+  points: number;
+}
+
+/** How many missed words the end-of-round reveal shows. */
+export const MISSED_WORDS_COUNT = 10;
+
+/**
+ * Finds the best words the pool could have made that no player submitted.
+ * Scans the dictionary once per round (server-side only, where the word list
+ * lives). Ranked by point value; ties fall back to length, then alphabetically.
+ */
+export function computeMissedWords(
+  dictionary: ReadonlySet<string>,
+  pool: ReadonlySet<Letter>,
+  letterValues: Readonly<Record<Letter, number>>,
+  submitted: ReadonlySet<string>,
+  count = MISSED_WORDS_COUNT,
+): MissedWord[] {
+  const scores: MissedWord[] = [];
+  for (const word of dictionary) {
+    if (word.length < MIN_WORD_LENGTH) continue;
+    if (submitted.has(word)) continue;
+
+    let ok = true;
+    let points = 0;
+    for (const letter of word) {
+      if (!pool.has(letter)) {
+        ok = false;
+        break;
+      }
+      points += letterValues[letter] ?? 0;
+    }
+    if (!ok) continue;
+    scores.push({ word, points });
+  }
+
+  scores.sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.word.length - a.word.length ||
+      a.word.localeCompare(b.word),
+  );
+  return scores.slice(0, count);
+}
+
+/** Sums the point value of every letter in a word (re-export for convenience). */
+export { scoreWord };
