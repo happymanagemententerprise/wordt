@@ -1,9 +1,23 @@
 import type { ReactNode } from 'react';
 
-import type { PublicRoomState } from '@wordt/shared';
+import { RARE_LETTER_VALUE, type PublicRoomState } from '@wordt/shared';
 
 import { feedStreaks } from '../scoreboard';
 import { Countdown, ValueTable } from '../ui';
+
+/** The round's rare letter, shown apart from the pool because it is never in it. */
+export function RareLetter({ state }: { state: PublicRoomState }): ReactNode {
+  if (!state.rareLetter) return null;
+  return (
+    <div className="tv-rare">
+      <span className="tv-rare__label">Rare letter</span>
+      <span className="tv-rare__letter">{state.rareLetter}</span>
+      <span className="tv-rare__worth">
+        +{RARE_LETTER_VALUE} if you&rsquo;re the only finder
+      </span>
+    </div>
+  );
+}
 
 export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNode {
   if (!state.letterValues) return null;
@@ -19,7 +33,10 @@ export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNo
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="left" />
       </header>
-      <ValueTable table={state.letterValues} />
+      <div className="tv-value-layout">
+        <ValueTable table={state.letterValues} />
+        <RareLetter state={state} />
+      </div>
     </section>
   );
 }
@@ -43,6 +60,7 @@ export function Words({ state }: { state: PublicRoomState }): ReactNode {
 
       <div className="tv-workspace">
         <div className="tv-board">
+          <RareLetter state={state} />
           {state.letterValues ? <ValueTable table={state.letterValues} /> : null}
 
           <ul className="tv-writers">

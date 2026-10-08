@@ -1,13 +1,15 @@
 :root {
   color-scheme: dark;
-  --bg: #0b0f1a;
-  --surface: #141a2b;
-  --surface-2: #1c2438;
-  --line: #26304a;
-  --text: #e8ecf6;
-  --muted: #8b94ad;
-  --accent: #ffd166;
-  --accent-ink: #1b1400;
+  --bg: #181818;
+  --surface: #242424;
+  --surface-2: #303030;
+  --line: #673AB7;
+  --text: #F7F7F7;
+  --muted: #9E9E9E;
+  --accent: #FF5722;
+  --accent-ink: #FFFFFF;
+  --tap: #FFEB3B;
+  --tile: #F5EFE3;
   --good: #3ddc97;
   --bad: #ff5d73;
 }
@@ -120,7 +122,7 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  color: rgba(233, 241, 255, 0.16);
+  color: rgba(247, 247, 247, 0.16);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
   user-select: none;
@@ -184,34 +186,34 @@ h2 {
 .tv-warbar__seg {
   display: block;
   height: 100%;
-  border-right: 1px solid rgba(11, 15, 26, 0.5);
+  border-right: 1px solid rgba(24, 24, 24, 0.5);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tv-team-text--A {
-  color: #7dd3fc;
+  color: #f7f7f7;
 }
 .tv-team-text--B {
-  color: #ff8fab;
+  color: #f7f7f7;
 }
 .tv-team-text--C {
-  color: #86efac;
+  color: #f7f7f7;
 }
 .tv-team-text--D {
-  color: #fdba74;
+  color: #f7f7f7;
 }
 
 .tv-warbar__seg--A {
-  background: #7dd3fc;
+  background: #673ab7;
 }
 .tv-warbar__seg--B {
-  background: #ff8fab;
+  background: #ff5722;
 }
 .tv-warbar__seg--C {
-  background: #86efac;
+  background: #ffeb3b;
 }
 .tv-warbar__seg--D {
-  background: #fdba74;
+  background: #f5efe3;
 }
 
 .tv-stage {
@@ -514,29 +516,13 @@ h2 {
   padding: 0.14em 0.3em;
   border-radius: 0.16em;
   background: var(--tile, var(--surface-2));
-  color: #10141c;
+  color: #181818;
   font-size: clamp(2.5rem, 5vw, 5rem);
   font-weight: 800;
   line-height: 1;
   box-shadow:
     0 0.06em 0 rgba(0, 0, 0, 0.45),
     inset 0 -0.05em 0 rgba(0, 0, 0, 0.16);
-}
-
-.lv-1 {
-  --tile: #7dd3fc;
-}
-.lv-2 {
-  --tile: #a5b4fc;
-}
-.lv-3 {
-  --tile: #f1f5f9;
-}
-.lv-4 {
-  --tile: #fca5a5;
-}
-.lv-5 {
-  --tile: #ffd166;
 }
 
 .tv-value__count {
@@ -772,9 +758,9 @@ h2 {
 }
 
 .tv-standing--leader {
-  border-color: rgba(255, 209, 102, 0.55);
+  border-color: rgba(255, 87, 34, 0.55);
   background:
-    linear-gradient(90deg, rgba(255, 209, 102, 0.08), transparent 55%),
+    linear-gradient(90deg, rgba(255, 87, 34, 0.08), transparent 55%),
     var(--surface);
 }
 
@@ -784,7 +770,7 @@ h2 {
   margin-right: 0.3em;
   vertical-align: -0.12em;
   fill: var(--accent);
-  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.5));
+  filter: drop-shadow(0 0 6px rgba(255, 235, 59, 0.5));
   flex-shrink: 0;
 }
 
@@ -810,19 +796,19 @@ h2 {
 /* -------------------------------------------------------------------- teams */
 
 .tv-team--A {
-  box-shadow: inset 6px 0 0 #7dd3fc;
+  box-shadow: inset 6px 0 0 #673ab7;
 }
 
 .tv-team--B {
-  box-shadow: inset 6px 0 0 #ff8fab;
+  box-shadow: inset 6px 0 0 #ff5722;
 }
 
 .tv-team--C {
-  box-shadow: inset 6px 0 0 #86efac;
+  box-shadow: inset 6px 0 0 #ffeb3b;
 }
 
 .tv-team--D {
-  box-shadow: inset 6px 0 0 #fdba74;
+  box-shadow: inset 6px 0 0 #f5efe3;
 }
 
 .tv-standing__members {
@@ -845,23 +831,23 @@ h2 {
 }
 
 .tv-team-tag--A {
-  background: rgba(125, 211, 252, 0.18);
-  color: #7dd3fc;
+  background: rgba(103, 58, 183, 0.55);
+  color: #f7f7f7;
 }
 
 .tv-team-tag--B {
-  background: rgba(255, 143, 171, 0.18);
-  color: #ff8fab;
+  background: rgba(255, 87, 34, 0.3);
+  color: #f7f7f7;
 }
 
 .tv-team-tag--C {
-  background: rgba(134, 239, 172, 0.18);
-  color: #86efac;
+  background: rgba(255, 235, 59, 0.22);
+  color: #ffeb3b;
 }
 
 .tv-team-tag--D {
-  background: rgba(253, 186, 116, 0.18);
-  color: #fdba74;
+  background: rgba(245, 239, 227, 0.2);
+  color: #f5efe3;
 }
 
 .tv-lobby__meta {
@@ -975,8 +961,8 @@ h2 {
 }
 
 .tv-feed__item--big {
-  border-color: rgba(255, 209, 102, 0.55);
-  background: rgba(255, 209, 102, 0.07);
+  border-color: rgba(255, 235, 59, 0.55);
+  background: rgba(255, 235, 59, 0.07);
 }
 
 .tv-feed__word {
@@ -1002,10 +988,10 @@ h2 {
 
 .tv-feed__streak {
   padding: 0.08em 0.5em;
-  border: 1px solid rgba(255, 143, 171, 0.55);
+  border: 1px solid rgba(255, 87, 34, 0.55);
   border-radius: 999px;
-  background: rgba(255, 143, 171, 0.12);
-  color: #ff8fab;
+  background: rgba(255, 87, 34, 0.14);
+  color: #ff5722;
   font-size: 0.72em;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -1017,7 +1003,7 @@ h2 {
   padding: 0.08em 0.5em;
   border-radius: 6px;
   background: var(--accent);
-  color: var(--accent-ink, #1b1400);
+  color: var(--accent-ink, #ffffff);
   font-size: 0.72em;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -1209,7 +1195,7 @@ h2 {
 
 .tv-podium__col--1 {
   order: 2;
-  border-color: rgba(255, 209, 102, 0.6);
+  border-color: rgba(255, 235, 59, 0.6);
   animation-delay: 0.1s;
 }
 
@@ -1235,21 +1221,21 @@ h2 {
 }
 
 .tv-podium__medal--1 {
-  background: #ffd166;
-  color: #1b1400;
-  box-shadow: 0 0 0 5px rgba(255, 209, 102, 0.22);
+  background: #ffeb3b;
+  color: #181818;
+  box-shadow: 0 0 0 5px rgba(255, 235, 59, 0.22);
 }
 
 .tv-podium__medal--2 {
-  background: #cbd5e1;
-  color: #0b0f1a;
-  box-shadow: 0 0 0 5px rgba(203, 213, 225, 0.16);
+  background: #673ab7;
+  color: #f7f7f7;
+  box-shadow: 0 0 0 5px rgba(103, 58, 183, 0.35);
 }
 
 .tv-podium__medal--3 {
-  background: #fdba74;
-  color: #1b1400;
-  box-shadow: 0 0 0 5px rgba(253, 186, 116, 0.18);
+  background: #ff5722;
+  color: #f7f7f7;
+  box-shadow: 0 0 0 5px rgba(255, 87, 34, 0.28);
 }
 
 .tv-podium__name {
@@ -1285,7 +1271,7 @@ h2 {
 
 .tv-podium__col--1 .tv-podium__bar {
   height: clamp(3rem, 7vw, 6.5rem);
-  background: linear-gradient(180deg, rgba(255, 209, 102, 0.35), rgba(255, 209, 102, 0.08));
+  background: linear-gradient(180deg, rgba(255, 235, 59, 0.35), rgba(255, 235, 59, 0.08));
 }
 
 .tv-podium__col--2 .tv-podium__bar {
@@ -1420,11 +1406,117 @@ h2 {
 @keyframes tv-glow {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0);
+    box-shadow: 0 0 0 0 rgba(255, 235, 59, 0);
   }
   50% {
-    box-shadow: 0 0 0 0.5rem rgba(255, 209, 102, 0.18);
+    box-shadow: 0 0 0 0.5rem rgba(255, 235, 59, 0.18);
   }
+}
+
+/* ------------------------------------------------------------------ rare letter */
+
+.tv-value-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tv-rare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9em;
+  padding: 0.55em 0.9em;
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  margin-inline: auto;
+}
+
+.tv-rare__label {
+  font-size: 0.78em;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tv-rare__letter {
+  display: grid;
+  place-items: center;
+  min-width: 1.3em;
+  height: 1.5em;
+  padding: 0 0.1em;
+  border-radius: 0.16em;
+  background: var(--tile);
+  color: #181818;
+  font-size: clamp(2.2rem, 4.5vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0.06em 0 rgba(0, 0, 0, 0.45);
+}
+
+.tv-rare__worth {
+  font-size: clamp(0.85rem, 1.2vw, 1.2rem);
+  color: var(--text);
+}
+
+/* -------------------------------------------------------------------- spotlight */
+
+.tv-reveal--rare {
+  gap: 0.6em;
+}
+
+.tv-reveal__rare {
+  font-size: clamp(4rem, 12vw, 11rem);
+  font-weight: 900;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 0.18em;
+  border-radius: 0.14em;
+  background: var(--tile);
+  color: #181818;
+  box-shadow: 0 0.06em 0 rgba(0, 0, 0, 0.45);
+}
+
+.tv-spotlight {
+  list: none;
+  margin: 1em auto 0;
+  padding: 0;
+  max-width: 34em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 100%;
+}
+
+.tv-spotlight__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8em;
+  padding: 0.55em 0.9em;
+  border: 1px solid rgba(255, 235, 59, 0.4);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(255, 235, 59, 0.12), transparent 60%),
+    var(--surface);
+  animation: tv-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.tv-spotlight__word {
+  font-size: clamp(1.2rem, 2vw, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.tv-spotlight__points {
+  color: var(--tap);
+  font-weight: 800;
+  font-size: clamp(1rem, 1.6vw, 1.5rem);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

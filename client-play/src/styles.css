@@ -1,13 +1,17 @@
 :root {
   color-scheme: dark;
-  --bg: #0b0f1a;
-  --surface: #141a2b;
-  --surface-2: #1c2438;
-  --line: #26304a;
-  --text: #e8ecf6;
-  --muted: #8b94ad;
-  --accent: #ffd166;
-  --accent-ink: #1b1400;
+  --bg: #181818;
+  --surface: #242424;
+  --surface-2: #303030;
+  --line: #673AB7;
+  --text: #F7F7F7;
+  --muted: #9E9E9E;
+  --accent: #FF5722;
+  --accent-ink: #FFFFFF;
+  --tap: #FFEB3B;
+  --tap-ink: #181818;
+  --tile: #F5EFE3;
+  --tile-ink: #181818;
   --good: #3ddc97;
   --good-ink: #06281c;
   --bad: #ff5d73;
@@ -127,7 +131,7 @@ h2 {
 }
 
 .pill--phase {
-  background: rgba(255, 209, 102, 0.16);
+  background: rgba(255, 87, 34, 0.18);
   color: var(--accent);
 }
 
@@ -277,19 +281,19 @@ h2 {
 }
 
 .btn--ready {
-  background: var(--good);
-  border-color: var(--good);
-  color: var(--good-ink);
+  background: var(--tap);
+  border-color: var(--tap);
+  color: var(--tap-ink);
   animation: pulse-ready 1.6s ease-in-out infinite;
 }
 
 @keyframes pulse-ready {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.45);
+    box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.45);
   }
   50% {
-    box-shadow: 0 0 0 0.55rem rgba(61, 220, 151, 0);
+    box-shadow: 0 0 0 0.55rem rgba(255, 235, 59, 0);
   }
 }
 
@@ -325,7 +329,7 @@ h2 {
 
 .team-card--on {
   border-color: var(--accent);
-  background: rgba(255, 209, 102, 0.14);
+  background: rgba(255, 235, 59, 0.14);
 }
 
 .team-card__name {
@@ -368,7 +372,7 @@ h2 {
 
 .chip-btn--on {
   border-color: var(--accent);
-  background: rgba(255, 209, 102, 0.14);
+  background: rgba(255, 235, 59, 0.14);
 }
 
 .chip-btn:disabled {
@@ -377,8 +381,8 @@ h2 {
 }
 
 .pill--team {
-  background: rgba(125, 211, 252, 0.16);
-  color: #7dd3fc;
+  background: rgba(103, 58, 183, 0.5);
+  color: #f7f7f7;
 }
 
 .actions {
@@ -509,7 +513,7 @@ h2 {
 }
 
 .standing--you {
-  border-color: rgba(255, 209, 102, 0.55);
+  border-color: rgba(255, 235, 59, 0.55);
 }
 
 .standing--away {
@@ -548,7 +552,7 @@ h2 {
 
 .make-host {
   padding: 0.25rem 0.6rem;
-  border: 1px solid rgba(255, 209, 102, 0.5);
+  border: 1px solid rgba(255, 235, 59, 0.5);
   border-radius: 999px;
   background: transparent;
   color: var(--accent);
@@ -561,14 +565,14 @@ h2 {
 }
 
 .make-host:hover {
-  background: rgba(255, 209, 102, 0.14);
+  background: rgba(255, 235, 59, 0.14);
 }
 
 .tag {
   margin-left: 0.45rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
-  background: rgba(255, 209, 102, 0.18);
+  background: rgba(255, 235, 59, 0.18);
   color: var(--accent);
   font-size: 0.65rem;
   font-weight: 700;
@@ -582,12 +586,12 @@ h2 {
 }
 
 .tag--host {
-  border: 1px solid rgba(255, 209, 102, 0.55);
+  border: 1px solid rgba(255, 235, 59, 0.55);
 }
 
 .tag--team {
-  background: rgba(125, 211, 252, 0.18);
-  color: #7dd3fc;
+  background: #673ab7;
+  color: #f7f7f7;
 }
 
 /* --- countdown ----------------------------------------------------------- */
@@ -635,6 +639,9 @@ h2 {
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
   background: var(--surface);
+  max-width: 26rem;
+  width: 100%;
+  margin-inline: auto;
 }
 
 .keyboard--locked {
@@ -670,10 +677,10 @@ h2 {
 }
 
 .key--on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 0 12px rgba(255, 209, 102, 0.45);
+  background: var(--tap);
+  border-color: var(--tap);
+  color: var(--tap-ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 0 12px rgba(255, 235, 59, 0.45);
   animation: key-pop 0.22s ease;
 }
 
@@ -706,7 +713,7 @@ h2 {
   padding: 0.85rem;
   border: 1px dashed var(--line);
   border-radius: var(--radius);
-  color: var(--good);
+  color: var(--tap);
   font-weight: 600;
 }
 
@@ -737,14 +744,9 @@ h2 {
   border-radius: 10px;
   font-weight: 900;
   font-size: 1.25rem;
-  color: #0b0f1a;
+  background: var(--tile);
+  color: var(--tile-ink);
 }
-
-.value-1 { background: #7bdff2; }
-.value-2 { background: #6ee7b7; }
-.value-3 { background: var(--accent); }
-.value-4 { background: #f9a03f; }
-.value-5 { background: var(--bad); }
 
 .value-count {
   color: var(--muted);
@@ -767,7 +769,8 @@ h2 {
   gap: 0.2rem;
   padding: 0.3rem 0.55rem;
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--tile);
+  color: var(--tile-ink);
   font-weight: 800;
 }
 
@@ -775,6 +778,43 @@ h2 {
   font-style: normal;
   font-size: 0.72rem;
   color: var(--accent);
+}
+
+/* --- rare letter ----------------------------------------------------------- */
+
+.rare {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.rare__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rare__letter {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 8px;
+  background: var(--tile);
+  color: var(--tile-ink);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.rare__worth {
+  font-size: 0.85rem;
+  color: var(--text);
 }
 
 /* --- word making --------------------------------------------------------- */
@@ -861,6 +901,7 @@ h2 {
   text-align: center;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-top: 4px solid var(--line);
   border-radius: var(--radius);
 }
 
@@ -884,8 +925,8 @@ h2 {
 .myround {
   margin: 0;
   padding: 0.7rem 0.85rem;
-  background: rgba(255, 209, 102, 0.12);
-  border: 1px solid rgba(255, 209, 102, 0.35);
+  background: rgba(103, 58, 183, 0.25);
+  border: 1px solid rgba(103, 58, 183, 0.6);
   border-radius: var(--radius);
   font-size: 0.92rem;
 }
@@ -955,7 +996,7 @@ h2 {
   height: 1.6rem;
   padding: 0 0.3rem;
   border-radius: 999px;
-  background: rgba(255, 209, 102, 0.16);
+  background: rgba(255, 235, 59, 0.16);
   color: var(--accent);
   font-size: 0.82rem;
   font-weight: 800;
@@ -1113,7 +1154,7 @@ h2 {
   0% {
     opacity: 0;
     transform: scale(0.92);
-    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.4);
+    box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.4);
   }
   60% {
     opacity: 1;
@@ -1122,17 +1163,17 @@ h2 {
   100% {
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(61, 220, 151, 0);
+    box-shadow: 0 0 0 0 rgba(255, 235, 59, 0);
   }
 }
 
 @keyframes soft-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0);
+    box-shadow: 0 0 0 0 rgba(255, 235, 59, 0);
   }
   50% {
-    box-shadow: 0 0 0 0.4rem rgba(255, 209, 102, 0.14);
+    box-shadow: 0 0 0 0.4rem rgba(255, 235, 59, 0.14);
   }
 }
 

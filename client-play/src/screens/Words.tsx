@@ -1,5 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 
+import { RARE_LETTER_VALUE } from '@wordt/shared';
+
 import type { GameApi } from '../game';
 import { Countdown, LetterChips } from '../ui';
 
@@ -44,6 +46,16 @@ export function Words({ game }: { game: GameApi }): ReactNode {
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="left" />
       </div>
+
+      {state.rareLetter ? (
+        <div className="rare">
+          <span className="rare__label">Rare letter</span>
+          <span className="rare__letter">{state.rareLetter}</span>
+          <span className="rare__worth">
+            +{RARE_LETTER_VALUE} if you&rsquo;re the only finder
+          </span>
+        </div>
+      ) : null}
 
       {state.letterValues ? <LetterChips table={state.letterValues} /> : null}
 

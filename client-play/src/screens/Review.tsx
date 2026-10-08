@@ -23,6 +23,21 @@ export function Review({ game }: { game: GameApi }): ReactNode {
       <div className="reveal" key={state.reviewIndex} aria-live="polite">
         {!step ? (
           <p className="lead">Scoring the round…</p>
+        ) : step.kind === 'rare_letter' ? (
+          <>
+            <p className="eyebrow">
+              Rare letter · {step.reveal.letter}
+              {step.reveal.awarded.length > 0 ? ` · +${step.reveal.value}` : ''}
+            </p>
+            <p className="reveal__word">{step.reveal.letter}</p>
+            <p className="reveal__who">
+              {step.reveal.finders.length === 0
+                ? 'nobody used it this round'
+                : step.reveal.finders.length > 1
+                  ? `${step.reveal.finders.map((finder) => finder.credit).join(' and ')} both found it — nobody credited`
+                  : `${step.reveal.finders[0]!.credit} found it in “${step.reveal.finders[0]!.word}”`}
+            </p>
+          </>
         ) : step.kind === 'unique_word' ? (
           <>
             <p className="eyebrow">Unique word · +{step.points}</p>
@@ -60,6 +75,14 @@ export function Review({ game }: { game: GameApi }): ReactNode {
               {step.words.map((missed) => `${missed.word} +${missed.points}`).join(' · ')}
             </p>
             <p className="reveal__who">formable from the pool — nobody found them</p>
+          </>
+        ) : step.kind === 'spotlight' ? (
+          <>
+            <p className="eyebrow">Spotlight</p>
+            <p className="reveal__word">
+              {step.words.map((missed) => `${missed.word} +${missed.points}`).join(' · ')}
+            </p>
+            <p className="reveal__who">the five biggest words nobody made</p>
           </>
         ) : (
           <>

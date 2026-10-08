@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { RARE_LETTER_VALUE } from '@wordt/shared';
+
 import type { GameApi } from '../game';
 import { Countdown, ValueTable } from '../ui';
 
@@ -18,6 +20,16 @@ export function ValueTableScreen({ game }: { game: GameApi }): ReactNode {
         </div>
         <Countdown endsAt={state.phaseEndsAt} hint="to words" />
       </div>
+
+      {state.rareLetter ? (
+        <div className="rare">
+          <span className="rare__label">Rare letter</span>
+          <span className="rare__letter">{state.rareLetter}</span>
+          <span className="rare__worth">
+            +{RARE_LETTER_VALUE} if you&rsquo;re the only finder
+          </span>
+        </div>
+      ) : null}
 
       {state.letterValues ? <ValueTable table={state.letterValues} /> : null}
     </section>

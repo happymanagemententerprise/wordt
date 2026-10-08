@@ -10,6 +10,32 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
     state.players.filter((player) => player.teamId === id).map((player) => player.name).join(' · ') || null;
 
   switch (step.kind) {
+    case 'rare_letter': {
+      const { reveal } = step;
+      const tied = reveal.finders.length > 1;
+      const found = reveal.finders.length > 0;
+      return (
+        <div className="tv-reveal tv-reveal--rare">
+          <p className="tv-eyebrow">Rare letter</p>
+          <p className="tv-reveal__rare">{reveal.letter}</p>
+          <p className="tv-reveal__who">
+            {tied ? (
+              <>
+                {reveal.finders.map((finder) => finder.credit).join(' and ')} both found it
+                <span className="tv-reveal__points"> — nobody credited</span>
+              </>
+            ) : found ? (
+              <>
+                {reveal.finders[0]!.credit} found it in “{reveal.finders[0]!.word}”
+                <span className="tv-reveal__points"> +{reveal.value}</span>
+              </>
+            ) : (
+              <>nobody used it this round</>
+            )}
+          </p>
+        </div>
+      );
+    }
     case 'unique_word':
       return (
         <div className="tv-reveal">
@@ -73,6 +99,21 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
         </div>
       );
     }
+    case 'spotlight':
+      return (
+        <div className="tv-reveal tv-reveal--spotlight">
+          <p className="tv-eyebrow">Spotlight</p>
+          <p className="tv-reveal__sub">the five biggest words nobody made</p>
+          <ul className="tv-spotlight">
+            {step.words.map((missed, index) => (
+              <li key={missed.word} className="tv-spotlight__row" style={{ '--i': index } as CSSProperties}>
+                <span className="tv-spotlight__word">{missed.word}</span>
+                <span className="tv-spotlight__points">+{missed.points}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
     case 'leaderboard':
       return <Standings players={state.standings} teamLabel={memberNames} rankChange={rankChanges(state)} />;
   }
