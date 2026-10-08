@@ -1,3 +1,7 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join, normalize, sep } from 'node:path';
+
 import { Server, type Socket } from 'socket.io';
 
 import {
@@ -13,6 +17,97 @@ import { Room, type WordOutcome } from './room';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const EMPTY_ROOM_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Serves the built phone and TV bundles from one service, so a single Render
+ * web service hosts the whole game:
+ *   /play -> client-play/dist   /tv -> client-tv/dist
+ * Each dist is inside this repository at workspace build time.
+ */
+const DISTS: Readonly<Record<string, string>> = {
+  '/play': join(process.cwd(), '..', 'client-play', 'dist'),
+  '/tv': join(process.cwd(), '..', 'client-tv', 'dist'),
+};
+
+const MIME: Readonly<Record<string, string>> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.ico': 'image/x-icon',
+  '.map': 'application/json; charset=utf-8',
+};
+
+function assetPath(urlPath: string): string | null {
+  const prefix = Object.keys(DISTS).find((key) => {
+    const rest = urlPath.slice(key.length);
+    return rest === '' || rest === '/' || rest.startsWith('/');
+  });
+  if (!prefix) return null;
+
+  const rest = (urlPath.slice(prefix.length) || '/').replace(/\/{2,}/g, '/');
+  const root = DISTS[prefix]!;
+  if (rest === '/') return join(root, 'index.html');
+
+  const target = normalize(join(root, rest.startsWith('/') ? rest.slice(1) : rest));
+  if (target !== root && !target.startsWith(root + sep)) return null;
+  return target;
+}
+
+function serveAssets(req: IncomingMessage, res: ServerResponse): void {
+  const url = new URL(req.url ?? '/', 'http://localhost');
+  const pathName = decodeURIComponent(url.pathname);
+
+  if (pathName === '/') {
+    res.writeHead(302, { Location: '/play/' });
+    res.end();
+    return;
+  }
+
+  // SPA fallback: unknown deep links under a prefix serve the app's index.html.
+  const target = assetPath(pathName);
+  if (!target) {
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Not found.');
+    return;
+  }
+
+  readFile(target)
+    .then((body) => {
+      const type = MIME[target.slice(target.lastIndexOf('.'))] ?? 'application/octet-stream';
+      res.writeHead(200, { 'Content-Type': type });
+      res.end(body);
+    })
+    .catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Not found.');
+        return;
+      }
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Internal error.');
+    });
+}
+
+const httpServer = createServer((req, res) => {
+  const url = new URL(req.url ?? '/', 'http://localhost');
+  // Socket.IO handles its own transport endpoints; anything else is static.
+  if (url.pathname.startsWith('/socket.io')) return;
+
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    serveAssets(req, res);
+    return;
+  }
+  res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('Method not allowed.');
+});
+
+const io = new Server(httpServer, { cors: { origin: true }, serveClient: false });
+httpServer.listen(PORT);
 
 interface Session {
   roomCode: string;
@@ -41,8 +136,6 @@ type PlayerCtx =
 
 const rooms = new Map<string, Entry>();
 const sessions = new Map<string, Session>();
-
-const io = new Server(PORT, { cors: { origin: true }, serveClient: false });
 
 io.on('error', (error: Error) => {
   console.error('[wordt] socket.io error:', error.message);

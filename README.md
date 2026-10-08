@@ -62,7 +62,7 @@ letter values.
 
 A submission is rejected in this order, and the first failure wins:
 
-1. `TOO_SHORT` — shorter than 2 letters
+1. `TOO_SHORT` — shorter than 3 letters
 2. `UNUSABLE_LETTER` — contains a letter outside the pool
 3. `DUPLICATE` — this player already submitted it
 4. `NOT_IN_DICTIONARY` — not in `shared/words.txt`
@@ -72,11 +72,12 @@ increments both *wrong tries* and *total tries*, which is what accuracy is
 measured against.
 
 **4. Review.** The round is scored on the server and the results are revealed one
-step at a time on the TV: unique words, then the stat bonuses, any draft
-penalties, then a **"words you missed"** step listing the highest-scoring words
-the pool could have made that nobody submitted, then the standings. While games
-run, the TV also shows a live feed of every accepted word and a progress bar for
-each player's letter pick.
+step at a time on the TV: the rare letter (when one was drawn), unique words,
+the most-used word, the stat bonuses, any draft penalties, then a **"words you
+missed"** step listing the highest-scoring words the pool could have made that
+nobody submitted, a **spotlight** on the very best of those, and finally the
+standings. While games run, the TV also shows a live feed of every accepted word
+and a progress bar for each player's letter pick.
 
 The TV plays like a game show: pool letters sit on bright contrasting tiles, a
 semi-transparent clock counts the phase down in the corner, the standings crown
@@ -105,10 +106,15 @@ round score = base score + shared-word penalty + draft penalty + bonuses
   | longest word             | +2     |
   | highest-scoring word     | +2     |
   | best accuracy            | +1     |
+  | rare letter find         | +10    |
 
   Best accuracy only considers players who made at least half of the per-player
   average of valid words. On a tie every tied player gets the full points, because
   `SHARE_POINTS_ON_STAT_TIES` is `true`.
+
+  The rare letter works like a solo find: it is worth 10 points to the *single*
+  player (or team) whose submitted word contains it, and when two or more players
+  find it, nobody is credited — the same spirit as the shared-word rule.
 
 The word the most players used is highlighted on the TV but scores nothing.
 
@@ -151,6 +157,32 @@ controls for the rest of the session.
 
 Rounds repeat for `ROUNDS` (3). Final standings are ordered by score, then by
 total valid words; players still level share the win.
+
+---
+
+## Deploying
+
+The whole game ships as **one service**. `npm run build` at the root typechecks
+every workspace and produces `client-play/dist` and `client-tv/dist`. The server
+is the only process you need to run, and it serves both built apps itself:
+
+- `/play` — the phone client
+- `/tv` — the TV client
+- `/` — redirects to `/play`
+
+Unknown routes under each prefix fall back to that app's `index.html`, so
+refreshes and deep links land on the right screen.
+
+```bash
+npm run build                      # typecheck + build both clients
+npm run start --workspace @wordt/server   # serves /play and /tv on :3000
+```
+
+Render hosters already inject `PORT`. The phone and TV load from the same
+origin, so CORS stays open (`origin: true`) without exposing anything. The
+client builds assume a `/play/` (phone) or `/tv/` (TV) base path, so the built
+apps must be served from those prefixes — never from a file URL. Dev mode is
+unaffected and keeps running at `/`.
 
 ---
 
@@ -236,7 +268,7 @@ The timers are read once at server start.
 ## Testing
 
 ```bash
-npm test                             # 56 scoring-engine unit tests
+npm test                             # 63 scoring-engine unit tests
 npm run typecheck                    # every workspace
 npm run smoke --workspace @wordt/server
 npm run e2e  --workspace @wordt/client-play
@@ -296,8 +328,10 @@ Things the spec left open, and what this build does:
    uses an injected RNG, so tests are deterministic; the server passes the
    default (`Math.random`).
 10. **"Words you missed"** — a top-10 review step listing the highest-scoring
-   words formable from the pool that no player submitted. Computed on the server
-   by scanning the dictionary once per round; skipped when nothing qualifies.
+    words formable from the pool that no player submitted. Computed on the server
+    by scanning the dictionary once per round; skipped when nothing qualifies.
+    The **spotlight** step then re-features the top 5 of that list right before
+    the standings, so the best find is the last thing players remember.
 11. **Round length is a host choice** (10–600s, suggested 30/60/90/120) made in
    the lobby before the game starts; the game cannot start without one. Picks
    the first game's length, reused for every round until the room is recreated.
@@ -323,3 +357,12 @@ Things the spec left open, and what this build does:
     input.
 19. **TypeScript stays on 5.x.** The registry's latest is 7.x; 5.7 is what the
     whole repo is pinned to.
+20. **The rare letter** — once the picks close, the server draws one letter from
+    every alphabet letter no player drafted that the pool does not hold either
+    (`RARE_LETTER_SOURCE = 'computer'`), worth `RARE_LETTER_VALUE` (10 points)
+    and revealed in the review as its own step. Only a single finder — one
+    player, or one team whose merged words contain the letter — earns the 10;
+    if two or more players find it, nobody is credited, mirroring the
+    shared-word rule. Both clients mark the rare letter on the pool screens from
+    the value table onward. When the players collectively drafted the whole
+    alphabet there are no candidates and no rare letter is drawn that round.
