@@ -11,8 +11,14 @@ export const ROUND_SECONDS_MAX = 600;
 export const ROUND_SECONDS_CHOICES = [30, 60, 90, 120] as const;
 
 // --- Word rules ---
-export const MIN_WORD_LENGTH = 2;
+export const MIN_WORD_LENGTH = 3;
 export const ALLOW_LETTER_REUSE_IN_WORD = true;
+
+// --- Rare letter ---
+/** The rare letter is drawn by the computer, outside the round's pool. */
+export const RARE_LETTER_SOURCE = 'computer';
+/** Points earned for finding the rare letter. A tie between finders credits nobody. */
+export const RARE_LETTER_VALUE = 10;
 
 // --- Letter pool ---
 export const LETTER_POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;

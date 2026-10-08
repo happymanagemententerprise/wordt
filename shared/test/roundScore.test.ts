@@ -315,6 +315,66 @@ describe('scoreRound', () => {
       }
     });
   });
+
+  describe('the rare letter', () => {
+    it('pays a single finder RARE_LETTER_VALUE as a find bonus', () => {
+      const result = scoreRound({
+        players: [player('a', ['TREE']), player('b', ['RATE'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'A',
+      });
+
+      expect(result.rare).toBeDefined();
+      expect(result.rare!.letter).toBe('A');
+      expect(result.rare!.awarded).toEqual(['b']);
+      expect(result.rare!.finders).toEqual([
+        { id: 'b', credit: 'B', word: 'RATE' },
+      ]);
+
+      const b = result.players.find((p) => p.id === 'b')!;
+      const rare = b.bonuses.find((x) => x.stat === 'rare_letter');
+      expect(rare?.points).toBe(10);
+      expect(b.roundScore).toBe(
+        b.baseScore + b.sameWordPenalty + b.bonuses.reduce((s, x) => s + x.points, 0),
+      );
+    });
+
+    it('credits nobody when two players find it, but still lists both', () => {
+      const result = scoreRound({
+        players: [player('a', ['TREE']), player('b', ['RATE', 'MET'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'E',
+      });
+
+      expect(result.rare!.awarded).toEqual([]);
+      expect(result.rare!.finders.map((f) => f.id)).toEqual(['a', 'b']);
+      for (const p of result.players) {
+        expect(p.bonuses.some((b) => b.stat === 'rare_letter')).toBe(false);
+      }
+      // No rare find, so the round score is just base + other bonuses.
+      expect(result.rare!.finders).toHaveLength(2);
+    });
+
+    it('is absent from the result when no rare letter was drawn', () => {
+      const result = scoreRound(round([player('a', ['TREE'])]));
+
+      expect(result.rare).toBeUndefined();
+    });
+
+    it('never grants points when nobody found it, and the reveal still lists the letter', () => {
+      const result = scoreRound({
+        players: [player('a', ['TREE']), player('b', ['DEAL', 'DOLL'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'Q',
+      });
+
+      expect(result.rare!.finders).toEqual([]);
+      expect(result.rare!.awarded).toEqual([]);
+      for (const p of result.players) {
+        expect(p.bonuses.some((b) => b.stat === 'rare_letter')).toBe(false);
+      }
+    });
+  });
 });
 
 describe('standings', () => {

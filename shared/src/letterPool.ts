@@ -100,6 +100,23 @@ const FREQUENCY_RANK: ReadonlyMap<Letter, number> = new Map(
   [...ENGLISH_FREQUENCY_ORDER].map((letter, index) => [letter, index]),
 );
 
+/**
+ * Candidates for the round's rare letter: every alphabet letter that no player
+ * drafted and the pool did not draw. The rare letter is drawn from this set, so
+ * it can never duplicate a pick or a pool letter. May be empty when the room
+ * collectively drafted the whole alphabet.
+ */
+export function rareLetterCandidates(
+  picks: readonly (readonly Letter[])[],
+  pool: readonly Letter[],
+): Letter[] {
+  const taken = new Set<Letter>(pool);
+  for (const pick of picks) {
+    for (const letter of pick) taken.add(letter);
+  }
+  return [...LETTER_POOL].filter((letter) => !taken.has(letter));
+}
+
 function frequencyRank(letter: Letter): number {
   const rank = FREQUENCY_RANK.get(letter);
   // Unknown letters sort last rather than throwing, so a bad pool cannot crash a round.

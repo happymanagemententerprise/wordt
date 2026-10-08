@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ENGLISH_FREQUENCY_ORDER, LETTER_POOL, POOL_SIZE, VOWELS } from '../src/config';
-import { buildPool, computeLetterValues, overlapLetters } from '../src/letterPool';
+import { buildPool, computeLetterValues, overlapLetters, rareLetterCandidates } from '../src/letterPool';
 import type { Letter } from '../src/types';
 
 const LETTERS = [...LETTER_POOL] as Letter[];
@@ -154,5 +154,38 @@ describe('overlapLetters', () => {
 
   it('returns an empty list when no letter reaches the threshold', () => {
     expect(overlapLetters([['A'] as Letter[], ['B'] as Letter[]])).toEqual([]);
+  });
+});
+
+describe('rareLetterCandidates', () => {
+  it('excludes every letter any player drafted and every pool letter', () => {
+    const picks = [
+      ['A', 'B', 'C'] as Letter[],
+      ['C', 'D', 'E'] as Letter[],
+    ];
+    const pool = ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S'] as Letter[];
+
+    const candidates = rareLetterCandidates(picks, pool);
+    for (const letter of candidates) {
+      expect(picks.flat()).not.toContain(letter);
+      expect(pool).not.toContain(letter);
+    }
+  });
+
+  it('covers the alphabet that was not drafted, exactly once', () => {
+    const picks = [['E', 'T', 'A', 'O'] as Letter[]];
+    const pool = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W'] as Letter[];
+
+    const taken = new Set([...picks.flat(), ...pool]);
+    const expected = [...LETTER_POOL].filter((letter) => !taken.has(letter));
+    const candidates = rareLetterCandidates(picks, pool);
+    expect([...candidates].sort()).toEqual([...expected].sort());
+  });
+
+  it('returns an empty list when the players drafted the whole alphabet', () => {
+    const whole = [...LETTER_POOL] as Letter[];
+    const picks = [whole];
+
+    expect(rareLetterCandidates(picks, [])).toEqual([]);
   });
 });

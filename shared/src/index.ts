@@ -8,6 +8,7 @@ export {
   computeLetterValues,
   buildPool,
   overlapLetters,
+  rareLetterCandidates,
   SCRABBLE_VALUES,
   isVowel,
   type BuiltPool,

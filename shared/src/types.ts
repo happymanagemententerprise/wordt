@@ -74,6 +74,8 @@ export interface RoundPlayerInput {
 export type RoundScoreInput = {
   players: RoundPlayerInput[];
   letterValues: Record<Letter, number>;
+  /** The round's rare letter (outside the pool), or null when none was drawn. */
+  rareLetter?: Letter | null;
 };
 
 export interface StatAward {
@@ -143,6 +145,17 @@ export interface MissedWord {
   points: number;
 }
 
+/** The round's rare letter and how the find was settled, for the first reveal. */
+export interface RareLetterReveal {
+  letter: Letter;
+  /** Points the find was worth. */
+  value: number;
+  /** Units that submitted a valid word containing the rare letter. */
+  finders: { id: PlayerId; credit: string; word: string }[];
+  /** Units credited with the find; empty when two or more tied (nobody credited). */
+  awarded: PlayerId[];
+}
+
 export interface RoundResult {
   players: PlayerRoundResult[];
   /** Words submitted by exactly one player. */
@@ -154,6 +167,8 @@ export interface RoundResult {
   draftPenalties: DraftPenaltyEntry[];
   /** Best words formable from the pool that nobody submitted; server-filled. */
   missedWords?: MissedWord[];
+  /** The rare letter round data; server-filled when the round drew one. */
+  rare?: RareLetterReveal;
 }
 
 /** One player's live record in a room. */
@@ -177,11 +192,13 @@ export interface RoomPlayer {
 
 /** One step of the end-of-round result review, revealed on the TV in order. */
 export type ReviewStep =
+  | { kind: 'rare_letter'; reveal: RareLetterReveal }
   | { kind: 'unique_word'; word: string; playerId: PlayerId; playerName: string; points: number; credit: string }
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }
   | { kind: 'draft_penalty'; entries: DraftPenaltyEntry[] }
   | { kind: 'missed_words'; words: MissedWord[] }
+  | { kind: 'spotlight'; words: MissedWord[] }
   | { kind: 'leaderboard' };
 
 export interface PublicPlayer {
@@ -235,6 +252,8 @@ export interface PublicRoomState {
   hostId: PlayerId | null;
   /** Present from VALUE_TABLE onwards. */
   letterValues: LetterValueTable | null;
+  /** Present from VALUE_TABLE onwards: the round's rare letter, outside the pool. */
+  rareLetter: Letter | null;
   /** Present from VALUE_TABLE onwards: the fixed pool size. */
   usableLetterCount: number;
   minWordLength: number;

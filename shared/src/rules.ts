@@ -28,16 +28,24 @@ export const HOW_TO_PLAY: readonly RulesSection[] = [
   {
     heading: 'Read the values',
     bullets: [
-      'Rarer pool letters are worth more, ranked into five tiers (1\u20135).',
-      'Vowels rank on their own, so they stay cheap (1\u20132).',
+      'Rarer pool letters are worth more, ranked into five tiers (1–5).',
+      'Vowels rank on their own, so they stay cheap (1–2).',
       'Computer-added letters sit at their standard Scrabble value.',
       'A word scores the sum of its letter values.',
     ],
   },
   {
+    heading: 'The rare letter',
+    bullets: [
+      'Every round hides one rare letter that nobody picked and the pool did not draw.',
+      'You can spell with it, but it never appears in the value table.',
+      '+10 to the only unit that finds it — when two or more find it, nobody is credited.',
+    ],
+  },
+  {
     heading: 'Make words',
     bullets: [
-      'Words need at least 2 letters and must be real dictionary words.',
+      'Words need at least 3 letters and must be real dictionary words.',
       'Letters can be reused across words.',
       'Submit as many words as you can before the round ends.',
       'A wrong try counts against your accuracy; a duplicate is a no-op.',

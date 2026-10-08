@@ -7,6 +7,7 @@ import {
   BONUS_MOST_UNIQUE_WORDS,
   BONUS_UNIQUE_WORD,
   DRAFT_PENALTY_PER_UNUSED_LETTER,
+  RARE_LETTER_VALUE,
   SHARE_POINTS_ON_STAT_TIES,
 } from './config';
 import { scoreWord } from './letterValues';
@@ -15,6 +16,7 @@ import type {
   Letter,
   PlayerId,
   PlayerRoundResult,
+  RareLetterReveal,
   RoundPlayerInput,
   RoundResult,
   RoundScoreInput,
@@ -52,8 +54,8 @@ export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
  * Scores one round. Pure: no clock, no I/O, no randomness.
  *
  * Runs in a fixed order so the review sequence shown on the TV is stable:
- * base scores, same-word penalty, draft penalty, unique words, then each stat
- * bonus, then the highlight-only most-used word.
+ * base scores, same-word penalty, draft penalty, unique words, the rare letter
+ * find, then each stat bonus, then the highlight-only most-used word.
  */
 export function scoreRound(
   input: RoundScoreInput,
@@ -152,6 +154,9 @@ export function scoreRound(
   }
   uniqueWords.sort((a, b) => b.word.length - a.word.length || a.word.localeCompare(b.word));
 
+  // --- Rare letter: one finder earns the full value; a tie credits nobody ---
+  const rare = scoreRareLetter(players, results, input.rareLetter ?? null);
+
   awardTracker.awardHighest({
     stat: 'most_unique_words',
     label: 'Most unique words',
@@ -214,7 +219,43 @@ export function scoreRound(
     // Filled in by the server, which owns the dictionary. Kept as a field here
     // so the review step builder has one shape to read.
     missedWords: undefined,
+    ...(rare ? { rare } : {}),
   };
+}
+
+/**
+ * Settles the rare letter. A single unit with a valid word containing the
+ * letter earns `RARE_LETTER_VALUE`; when two or more units found it, nobody is
+ * credited (the same spirit as the shared-word rule) — all finders are still
+ * listed for the reveal. The rare letter never contributes to word sums: its
+ * worth is only this find bonus.
+ */
+function scoreRareLetter(
+  players: readonly RoundPlayerInput[],
+  results: ReadonlyMap<PlayerId, PlayerRoundResult>,
+  rareLetter: Letter | null,
+): RareLetterReveal | undefined {
+  if (!rareLetter) return undefined;
+
+  const finders: { id: PlayerId; credit: string; word: string }[] = [];
+  for (const player of players) {
+    const word = player.validWords.find((candidate) => candidate.includes(rareLetter));
+    if (word === undefined) continue;
+    const owner = results.get(player.id);
+    const author = player.wordAuthors?.[word] ?? player.name;
+    finders.push({
+      id: player.id,
+      credit: owner ? creditWithAuthor(owner, owner.name, author) : player.name,
+      word,
+    });
+  }
+
+  const awarded = finders.length === 1 ? [finders[0]!.id] : [];
+  for (const id of awarded) {
+    results.get(id)?.bonuses.push({ stat: 'rare_letter', points: RARE_LETTER_VALUE });
+  }
+
+  return { letter: rareLetter, value: RARE_LETTER_VALUE, finders, awarded };
 }
 
 /** Letters this unit drafted that appear in none of its valid words. */

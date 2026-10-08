@@ -95,7 +95,7 @@ async function main(): Promise<void> {
     await ann.page.getByRole('button', { name: 'How to play' }).click();
     await ann.page.getByRole('heading', { name: 'How to play' }).waitFor({ state: 'visible' });
     const phoneRules = await ann.page.locator('.rules__num').count();
-    assert(phoneRules === 7, `expected 7 phone rule sections, saw ${phoneRules}`);
+    assert(phoneRules === 8, `expected 8 phone rule sections, saw ${phoneRules}`);
     await ann.page.getByRole('button', { name: '← Back' }).click();
     await ann.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible' });
     console.log('the phone how-to-play page renders and backs out');
@@ -135,7 +135,7 @@ async function main(): Promise<void> {
     await tvRulesPage.getByRole('button', { name: 'How to play' }).click();
     await tvRulesPage.getByRole('heading', { name: 'How to play' }).waitFor({ state: 'visible' });
     const tvRulesCards = await tvRulesPage.locator('.tv-rules__card').count();
-    assert(tvRulesCards === 7, `expected 7 TV rule cards, saw ${tvRulesCards}`);
+    assert(tvRulesCards === 8, `expected 8 TV rule cards, saw ${tvRulesCards}`);
     await tvRulesPage.getByRole('button', { name: 'Back to entry' }).click();
     await tvRulesPage.locator('.tv-entry__input').waitFor({ state: 'visible' });
     await tvRulesContext.close();
