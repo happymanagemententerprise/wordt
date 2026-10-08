@@ -19,6 +19,7 @@ import {
   lettersPerTeamMember,
   mergeTeam,
   normalizeWord,
+  rareLetterCandidates,
   scoreRound,
   teamIdsForPlayerCount,
   teamName,
@@ -107,6 +108,8 @@ export class Room {
   round = 0;
   phaseEndsAt: number | null = null;
   letterValues: LetterValueTable | null = null;
+  /** This round's rare letter (drawn outside the pool), or null when none was. */
+  rareLetter: Letter | null = null;
   lastRoundResult: RoundResult | null = null;
   notice: string | null = null;
   reviewSteps: ReviewStep[] = [];
@@ -231,6 +234,7 @@ export class Room {
     this.notice = null;
     this.lastRoundResult = null;
     this.letterValues = null;
+    this.rareLetter = null;
     this.reviewSteps = [];
     this.reviewIndex = 0;
 
@@ -256,6 +260,7 @@ export class Room {
     this.reviewSteps = [];
     this.reviewIndex = 0;
     this.letterValues = null;
+    this.rareLetter = null;
     this.feed.length = 0;
     this.pickLimit = this.teamsEnabled
       ? lettersPerTeamMember(TEAM_SIZE)
@@ -443,6 +448,15 @@ export class Room {
     const { pool, computerAdded } = buildPool(picks, POOL_SIZE);
     this.letterValues = computeLetterValues(picks, pool, new Set(computerAdded));
 
+    // The rare letter is drawn from letters nobody drafted and the pool skipped,
+    // so it never overlaps a pick or the pool. It is usable in words but has no
+    // place in the value table — its worth is the find bonus in the reveal.
+    const rareCandidates = rareLetterCandidates(picks, pool);
+    this.rareLetter =
+      rareCandidates.length > 0
+        ? rareCandidates[Math.floor(Math.random() * rareCandidates.length)]!
+        : null;
+
     if (this.letterValues.entries.length === 0) {
       // Unreachable with a 15-letter pool, but never start a word phase blind.
       this.notice = 'There are no usable letters. The word phase is skipped.';
@@ -472,9 +486,11 @@ export class Room {
     if (!player || !this.letterValues) return null;
 
     const word = normalizeWord(rawWord);
+    const usable = this.letterValues.entries.map((entry) => entry.letter);
+    if (this.rareLetter) usable.push(this.rareLetter);
     const context: WordCheckContext = {
       dictionary: DICTIONARY,
-      usableLetters: new Set(this.letterValues.entries.map((e) => e.letter)),
+      usableLetters: new Set(usable),
       letterCounts: this.letterValues.counts,
       minLength: MIN_WORD_LENGTH,
       allowReuse: ALLOW_LETTER_REUSE_IN_WORD,
@@ -513,7 +529,11 @@ export class Room {
     const table = this.letterValues ?? { entries: [], values: {}, counts: {}, source: {} };
 
     const inputs = this.buildScoringInputs();
-    const result = scoreRound({ players: inputs, letterValues: table.values });
+    const result = scoreRound({
+      players: inputs,
+      letterValues: table.values,
+      rareLetter: this.rareLetter,
+    });
 
     // Words the final pool could have made that nobody actually submitted.
     if (this.letterValues && this.letterValues.entries.length > 0) {
@@ -701,6 +721,7 @@ export class Room {
       players,
       hostId: this.host?.id ?? null,
       letterValues: this.letterValues,
+      rareLetter: this.rareLetter,
       usableLetterCount: this.letterValues?.entries.length ?? 0,
       minWordLength: MIN_WORD_LENGTH,
       pickLimit: this.pickLimit,
@@ -784,6 +805,10 @@ export class Room {
 function buildReviewSteps(result: RoundResult): ReviewStep[] {
   const steps: ReviewStep[] = [];
 
+  if (result.rare) {
+    steps.push({ kind: 'rare_letter', reveal: result.rare });
+  }
+
   for (const unique of result.uniqueWords) {
     steps.push({
       kind: 'unique_word',
@@ -809,6 +834,8 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
 
   if (result.missedWords && result.missedWords.length > 0) {
     steps.push({ kind: 'missed_words', words: result.missedWords });
+    // The top of the missed list gets its own spotlight beat before the board.
+    steps.push({ kind: 'spotlight', words: result.missedWords.slice(0, 5) });
   }
 
   steps.push({ kind: 'leaderboard' });

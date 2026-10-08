@@ -141,9 +141,16 @@ async function main(): Promise<void> {
   const table = valueTable.letterValues.entries.map((e: any) => `${e.letter}=${e.value}`).join(' ');
   console.log(`value table: ${table}`);
   assert(valueTable.usableLetterCount === 15, `expected 15 usable letters, got ${valueTable.usableLetterCount}`);
+  assert(valueTable.rareLetter, 'a rare letter should be drawn while candidates remain');
+  assert(
+    valueTable.letterValues.entries.every((e: any) => e.letter !== valueTable.rareLetter),
+    'the rare letter must not be in the round pool',
+  );
+  console.log(`rare letter drawn: ${valueTable.rareLetter}`);
 
   const words = await awaitState(ann, (s) => s.phase === 'WORDS', 8000, 'WORDS');
   console.log(`WORDS phase, minimum length ${words.minWordLength}`);
+  assert(words.minWordLength === 3, `expected minimum word length 3, got ${words.minWordLength}`);
 
   assert(!(await emit(ann, 'word:submit', { word: 'ZZZ' })).ok, 'junk word should be rejected');
   assert(!(await emit(ann, 'word:submit', { word: 'S' })).ok, 'single-letter word should be rejected');
@@ -161,8 +168,20 @@ async function main(): Promise<void> {
   assert(ownWords.totalTries === 3, `expected 3 total tries, got ${ownWords.totalTries}`);
 
   const review = await awaitState(ann, (s) => s.phase === 'REVIEW', 60000, 'REVIEW');
-  assert(review.reviewSteps.length >= 2, 'expected review steps');
+  assert(review.reviewSteps.length >= 6, 'expected review steps');
+  if (review.reviewSteps[0].kind === 'rare_letter') {
+    assert(review.rareLetter, 'the review should carry the rare letter');
+  }
   console.log(`review steps: ${review.reviewSteps.map((s: any) => s.kind).join(' -> ')}`);
+  const stepKinds = review.reviewSteps.map((s: any) => s.kind);
+  assert(stepKinds[0] === 'rare_letter', 'the rare letter reveal must come first');
+  assert(stepKinds.includes('missed_words'), 'expected a missed-words reveal');
+  assert(
+    stepKinds.indexOf('spotlight') !== -1 &&
+      stepKinds.indexOf('leaderboard') !== -1 &&
+      stepKinds.indexOf('spotlight') < stepKinds.indexOf('leaderboard'),
+    'the spotlight reveal must precede the leaderboard',
+  );
 
   let state = review;
   let guard = 0;
