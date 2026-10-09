@@ -155,7 +155,7 @@ export function scoreRound(
   uniqueWords.sort((a, b) => b.word.length - a.word.length || a.word.localeCompare(b.word));
 
   // --- Rare letter: one finder earns the full value; a tie credits nobody ---
-  const rare = scoreRareLetter(players, results, input.rareLetter ?? null);
+  const rare = scoreRareLetter(players, results, input.rareLetter ?? null, input.letterValues);
 
   awardTracker.awardHighest({
     stat: 'most_unique_words',
@@ -227,26 +227,30 @@ export function scoreRound(
  * Settles the rare letter. A single unit with a valid word containing the
  * letter earns `RARE_LETTER_VALUE`; when two or more units found it, nobody is
  * credited (the same spirit as the shared-word rule) — all finders are still
- * listed for the reveal. The rare letter never contributes to word sums: its
- * worth is only this find bonus.
+ * listed for the reveal, each credited with their highest-scoring word that
+ * uses the letter. The rare letter never contributes to word sums: its worth is
+ * only this find bonus.
  */
 function scoreRareLetter(
   players: readonly RoundPlayerInput[],
   results: ReadonlyMap<PlayerId, PlayerRoundResult>,
   rareLetter: Letter | null,
+  letterValues: Readonly<Record<Letter, number>>,
 ): RareLetterReveal | undefined {
   if (!rareLetter) return undefined;
 
   const finders: { id: PlayerId; credit: string; word: string }[] = [];
   for (const player of players) {
-    const word = player.validWords.find((candidate) => candidate.includes(rareLetter));
-    if (word === undefined) continue;
+    const found = player.validWords
+      .filter((candidate) => candidate.includes(rareLetter))
+      .sort((a, b) => scoreWord(b, letterValues) - scoreWord(a, letterValues))[0];
+    if (found === undefined) continue;
     const owner = results.get(player.id);
-    const author = player.wordAuthors?.[word] ?? player.name;
+    const author = player.wordAuthors?.[found] ?? player.name;
     finders.push({
       id: player.id,
       credit: owner ? creditWithAuthor(owner, owner.name, author) : player.name,
-      word,
+      word: found,
     });
   }
 

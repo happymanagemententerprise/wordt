@@ -339,6 +339,20 @@ describe('scoreRound', () => {
       );
     });
 
+    it('credits the finder\'s highest-scoring word that uses the letter', () => {
+      const result = scoreRound({
+        players: [player('a', ['TEAL']), player('b', ['TREE', 'RATE'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'R',
+      });
+
+      // RATE scores 9, higher than TREE's 7 — the reveal names RATE.
+      expect(result.rare!.awarded).toEqual(['b']);
+      expect(result.rare!.finders).toEqual([
+        { id: 'b', credit: 'B', word: 'RATE' },
+      ]);
+    });
+
     it('credits nobody when two players find it, but still lists both', () => {
       const result = scoreRound({
         players: [player('a', ['TREE']), player('b', ['RATE', 'MET'])],
