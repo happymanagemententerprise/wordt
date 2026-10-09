@@ -37,9 +37,10 @@ export const HOW_TO_PLAY: readonly RulesSection[] = [
   {
     heading: 'The rare letter',
     bullets: [
-      'Every round hides one rare letter that nobody picked and the pool did not draw.',
-      'You can spell with it, but it never appears in the value table.',
-      '+10 to the only unit that finds it — when two or more find it, nobody is credited.',
+      'Each game draws one rare consonant (never a vowel, weighted towards Q/X/J/Z). It stays the same for every round and can never be in the pool or any pick.',
+      'Your first valid word that contains it spends your one lifetime use for that game. Later attempts are rejected.',
+      'If two or more players submit the identical rare word this round, that word nets to zero for them and nobody gets +10. Different rare words each keep the +10.',
+      'The rare letter never counts toward a word\'s normal tile value.',
     ],
   },
   {

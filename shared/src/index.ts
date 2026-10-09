@@ -9,6 +9,7 @@ export {
   buildPool,
   overlapLetters,
   rareLetterCandidates,
+  drawSessionRareLetter,
   SCRABBLE_VALUES,
   isVowel,
   type BuiltPool,

@@ -224,12 +224,13 @@ export function scoreRound(
 }
 
 /**
- * Settles the rare letter. A single unit with a valid word containing the
- * letter earns `RARE_LETTER_VALUE`; when two or more units found it, nobody is
- * credited (the same spirit as the shared-word rule) — all finders are still
- * listed for the reveal, each credited with their highest-scoring word that
- * uses the letter. The rare letter never contributes to word sums: its worth is
- * only this find bonus.
+ * Settles the rare letter. The letter is drawn once per game and is usable by
+ * everyone — but a player's first submitted word that contains it spends their
+ * one lifetime use (the server rejects later ones). A single finder earns
+ * `RARE_LETTER_VALUE`; when two or more units submit the *identical* rare word
+ * this round, that word nets to zero for all of them (same-word-penalty style)
+ * and none of them are credited. Finders with different rare words each keep
+ * their +10. The rare letter never contributes to word sums.
  */
 function scoreRareLetter(
   players: readonly RoundPlayerInput[],
@@ -239,27 +240,66 @@ function scoreRareLetter(
 ): RareLetterReveal | undefined {
   if (!rareLetter) return undefined;
 
-  const finders: { id: PlayerId; credit: string; word: string }[] = [];
+  // Each unit's best word that genuinely contains the rare letter.
+  const best = new Map<PlayerId, { word: string; points: number }>();
+  const byWord = new Map<string, PlayerId[]>();
   for (const player of players) {
-    const found = player.validWords
-      .filter((candidate) => candidate.includes(rareLetter))
-      .sort((a, b) => scoreWord(b, letterValues) - scoreWord(a, letterValues))[0];
-    if (found === undefined) continue;
-    const owner = results.get(player.id);
-    const author = player.wordAuthors?.[found] ?? player.name;
-    finders.push({
-      id: player.id,
-      credit: owner ? creditWithAuthor(owner, owner.name, author) : player.name,
-      word: found,
-    });
+    const rare = player.validWords.filter((word) => word.includes(rareLetter));
+    if (rare.length === 0) continue;
+    const word = rare.reduce(
+      (a, b) => (scoreWord(b, letterValues) > scoreWord(a, letterValues) ? b : a),
+      rare[0]!,
+    );
+    best.set(player.id, { word, points: scoreWord(word, letterValues) });
+    for (const candidate of rare) {
+      const ids = byWord.get(candidate);
+      if (ids) ids.push(player.id);
+      else byWord.set(candidate, [player.id]);
+    }
   }
 
-  const awarded = finders.length === 1 ? [finders[0]!.id] : [];
+  const zeroedSet = new Set<PlayerId>();
+  for (const [word, ids] of byWord) {
+    if (ids.length < 2) continue;
+    const points = scoreWord(word, letterValues);
+    // When the whole lobby shares the word the standard same-word rule already
+    // nets it to zero, so the rare rule must not take the base a second time —
+    // but the finders are still zeroed: "no player gets the point".
+    const sharedOutright = ids.length === players.length;
+    if (!sharedOutright) {
+      for (const id of ids) {
+        const result = results.get(id);
+        if (result) result.sameWordPenalty -= points;
+      }
+    }
+    for (const id of ids) zeroedSet.add(id);
+  }
+
+  const finders = [...best.entries()]
+    .sort((a, b) => b[1].points - a[1].points || a[0].localeCompare(b[0]))
+    .map(([id, { word }]) => {
+      const player = players.find((entry) => entry.id === id)!;
+      const owner = results.get(id);
+      const author = player.wordAuthors?.[word] ?? player.name;
+      return {
+        id,
+        credit: owner ? creditWithAuthor(owner, owner.name, author) : player.name,
+        word,
+      };
+    });
+
+  const awarded = finders.filter((finder) => !zeroedSet.has(finder.id)).map((finder) => finder.id);
   for (const id of awarded) {
     results.get(id)?.bonuses.push({ stat: 'rare_letter', points: RARE_LETTER_VALUE });
   }
 
-  return { letter: rareLetter, value: RARE_LETTER_VALUE, finders, awarded };
+  return {
+    letter: rareLetter,
+    value: RARE_LETTER_VALUE,
+    finders,
+    awarded,
+    zeroed: [...zeroedSet],
+  };
 }
 
 /** Letters this unit drafted that appear in none of its valid words. */

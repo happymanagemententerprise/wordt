@@ -15,9 +15,14 @@ export const MIN_WORD_LENGTH = 3;
 export const ALLOW_LETTER_REUSE_IN_WORD = true;
 
 // --- Rare letter ---
-/** The rare letter is drawn by the computer, outside the round's pool. */
+/** The rare letter is drawn by the computer, once per game, outside the pool. */
 export const RARE_LETTER_SOURCE = 'computer';
-/** Points earned for finding the rare letter. A tie between finders credits nobody. */
+/** Letters that are much more likely to be drawn as the game's rare letter. */
+export const RARE_LETTER_SET = ['Q', 'X', 'J', 'Z'] as const;
+/** How much more likely RARE_LETTER_SET letters are than an ordinary consonant. */
+export const RARE_LETTER_BOOST = 3;
+/** Points a single finder earns for the rare letter. A shared rare word zeroes
+ *  out for its submitters instead, and a used letter is spent for the game. */
 export const RARE_LETTER_VALUE = 10;
 
 // --- Letter pool ---

@@ -112,9 +112,13 @@ round score = base score + shared-word penalty + draft penalty + bonuses
   average of valid words. On a tie every tied player gets the full points, because
   `SHARE_POINTS_ON_STAT_TIES` is `true`.
 
-  The rare letter works like a solo find: it is worth 10 points to the *single*
-  player (or team) whose submitted word contains it, and when two or more players
-  find it, nobody is credited — the same spirit as the shared-word rule.
+  The rare letter is drawn once per game (a weighted consonant, never a vowel)
+  and stays the same for every round. It's worth +10 to a player (or team) if
+  their best word containing it is not zeroed. If two or more players submit the
+  *identical* rare word this round, that word nets to zero for them and nobody
+  gets the +10. Different rare words each keep the bonus. Each player may use
+  the rare letter only once for the whole game. The rare letter never counts
+  toward a word's normal tile value.
 
 The word the most players used is highlighted on the TV but scores nothing.
 
@@ -268,7 +272,7 @@ The timers are read once at server start.
 ## Testing
 
 ```bash
-npm test                             # 63 scoring-engine unit tests
+npm test                             # 70 scoring-engine unit tests
 npm run typecheck                    # every workspace
 npm run smoke --workspace @wordt/server
 npm run e2e  --workspace @wordt/client-play

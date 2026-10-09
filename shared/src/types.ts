@@ -17,7 +17,8 @@ export type WordRejection =
   | 'NOT_IN_DICTIONARY'
   | 'UNUSABLE_LETTER'
   | 'TOO_SHORT'
-  | 'DUPLICATE';
+  | 'DUPLICATE'
+  | 'RARE_USED';
 
 export type ValidationResult =
   | { ok: true }
@@ -152,8 +153,12 @@ export interface RareLetterReveal {
   value: number;
   /** Units that submitted a valid word containing the rare letter. */
   finders: { id: PlayerId; credit: string; word: string }[];
-  /** Units credited with the find; empty when two or more tied (nobody credited). */
+  /** Units credited with the find. Empty when a shared rare word was zeroed
+   *  out, or when every finder tied on the identical word. */
   awarded: PlayerId[];
+  /** Units whose submitted rare word was identical to another finder's this
+   *  round — that word nets to zero for them and earns no find bonus. */
+  zeroed: PlayerId[];
 }
 
 export interface RoundResult {
@@ -252,8 +257,10 @@ export interface PublicRoomState {
   hostId: PlayerId | null;
   /** Present from VALUE_TABLE onwards. */
   letterValues: LetterValueTable | null;
-  /** Present from VALUE_TABLE onwards: the round's rare letter, outside the pool. */
+  /** Present from VALUE_TABLE onwards: the game's rare letter, outside the pool. */
   rareLetter: Letter | null;
+  /** Players who already spent their one lifetime rare-letter use, this game. */
+  rareUsedBy: PlayerId[];
   /** Present from VALUE_TABLE onwards: the fixed pool size. */
   usableLetterCount: number;
   minWordLength: number;

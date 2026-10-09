@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ENGLISH_FREQUENCY_ORDER, LETTER_POOL, POOL_SIZE, VOWELS } from '../src/config';
-import { buildPool, computeLetterValues, overlapLetters, rareLetterCandidates } from '../src/letterPool';
+import { buildPool, computeLetterValues, drawSessionRareLetter, overlapLetters, rareLetterCandidates } from '../src/letterPool';
 import type { Letter } from '../src/types';
 
 const LETTERS = [...LETTER_POOL] as Letter[];
@@ -172,14 +172,17 @@ describe('rareLetterCandidates', () => {
     }
   });
 
-  it('covers the alphabet that was not drafted, exactly once', () => {
+  it('covers the consonants that were not drafted, exactly once', () => {
     const picks = [['E', 'T', 'A', 'O'] as Letter[]];
     const pool = ['E', 'T', 'A', 'O', 'I', 'N', 'S', 'H', 'R', 'D', 'L', 'C', 'U', 'M', 'W'] as Letter[];
 
     const taken = new Set([...picks.flat(), ...pool]);
-    const expected = [...LETTER_POOL].filter((letter) => !taken.has(letter));
+    const expected = [...LETTER_POOL].filter(
+      (letter) => !taken.has(letter) && !VOWEL_SET.has(letter),
+    );
     const candidates = rareLetterCandidates(picks, pool);
     expect([...candidates].sort()).toEqual([...expected].sort());
+    for (const letter of candidates) expect(VOWEL_SET.has(letter)).toBe(false);
   });
 
   it('returns an empty list when the players drafted the whole alphabet', () => {
@@ -187,5 +190,41 @@ describe('rareLetterCandidates', () => {
     const picks = [whole];
 
     expect(rareLetterCandidates(picks, [])).toEqual([]);
+  });
+});
+
+describe('drawSessionRareLetter', () => {
+  /** Drafts everything except the given letters, leaving them as the only consonants. */
+  function pickedEverythingExcept(letters: Letter[]): { picks: Letter[][]; pool: Letter[] } {
+    const rest = [...LETTER_POOL].filter((letter) => !letters.includes(letter)) as Letter[];
+    return { picks: [rest], pool: [] };
+  }
+
+  it('never draws a vowel', () => {
+    for (let seed = 0; seed < 20; seed += 1) {
+      const { picks, pool } = pickedEverythingExcept(['Z'] as Letter[]);
+      const letter = drawSessionRareLetter(picks, pool, seqRng(seed));
+      expect(letter).toBe('Z');
+      expect(VOWEL_SET.has(letter!)).toBe(false);
+    }
+  });
+
+  it('remains a plain consonant when only one candidate remains', () => {
+    // Everything except K is drafted, leaving K as the only consonant.
+    const { picks, pool } = pickedEverythingExcept(['K'] as Letter[]);
+    expect(drawSessionRareLetter(picks, pool)).toBe('K');
+  });
+
+  it('weights boosted letters above ordinary consonants', () => {
+    const { picks, pool } = pickedEverythingExcept(['K', 'Q'] as Letter[]);
+    // roll 0.5 * 4 = 2.0: clears K (weight 1), lands inside Q (weight 3).
+    expect(drawSessionRareLetter(picks, pool, () => 0.5)).toBe('Q');
+    // roll 0.1 * 4 = 0.4: lands inside K (weight 1).
+    expect(drawSessionRareLetter(picks, pool, () => 0.1)).toBe('K');
+  });
+
+  it('returns null when no consonants remain', () => {
+    const consonants = [...LETTER_POOL].filter((letter) => !VOWEL_SET.has(letter)) as Letter[];
+    expect(drawSessionRareLetter([consonants], [])).toBeNull();
   });
 });

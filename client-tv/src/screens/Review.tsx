@@ -19,7 +19,11 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
           <p className="tv-eyebrow">Rare letter</p>
           <p className="tv-reveal__rare">{reveal.letter}</p>
           <p className="tv-reveal__who">
-            {tied ? (
+            {reveal.zeroed.length > 0 && reveal.awarded.length === 0 ? (
+              <>{reveal.finders.map((finder) => finder.credit).join(' and ')} submitted the same rare word — it netted to zero.</>
+            ) : reveal.zeroed.length > 0 ? (
+              <>{reveal.awarded.map((id) => reveal.finders.find((f) => f.id === id)?.credit ?? 'someone').join(', ')} kept it • {reveal.zeroed.map((id) => reveal.finders.find((f) => f.id === id)?.credit ?? 'someone').join(', ')} shared a zeroed word.</>
+            ) : tied ? (
               <>
                 {reveal.finders.map((finder) => finder.credit).join(' and ')} both found it
                 <span className="tv-reveal__points"> — nobody credited</span>
@@ -30,7 +34,7 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
                 <span className="tv-reveal__points"> +{reveal.value}</span>
               </>
             ) : (
-              <>nobody used it this round</>
+              <>Nobody used it this round.</>
             )}
           </p>
         </div>

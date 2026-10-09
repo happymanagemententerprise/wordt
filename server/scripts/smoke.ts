@@ -146,6 +146,12 @@ async function main(): Promise<void> {
     valueTable.letterValues.entries.every((e: any) => e.letter !== valueTable.rareLetter),
     'the rare letter must not be in the round pool',
   );
+  const vowelCheck = (l: string) => l === 'A' || l === 'E' || l === 'I' || l === 'O' || l === 'U';
+  assert(!vowelCheck(valueTable.rareLetter), 'the rare letter must be a consonant');
+  assert(
+    valueTable.rareUsedBy !== undefined && Array.isArray(valueTable.rareUsedBy) && valueTable.rareUsedBy.length === 0,
+    'no player should have spent the rare letter yet',
+  );
   console.log(`rare letter drawn: ${valueTable.rareLetter}`);
 
   const words = await awaitState(ann, (s) => s.phase === 'WORDS', 8000, 'WORDS');

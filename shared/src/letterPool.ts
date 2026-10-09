@@ -3,6 +3,8 @@ import {
   ENGLISH_FREQUENCY_ORDER,
   LETTER_POOL,
   POOL_SIZE,
+  RARE_LETTER_BOOST,
+  RARE_LETTER_SET,
   USABLE_MIN_COUNT,
   VALUE_MIN,
   VOWELS,
@@ -101,10 +103,11 @@ const FREQUENCY_RANK: ReadonlyMap<Letter, number> = new Map(
 );
 
 /**
- * Candidates for the round's rare letter: every alphabet letter that no player
- * drafted and the pool did not draw. The rare letter is drawn from this set, so
- * it can never duplicate a pick or a pool letter. May be empty when the room
- * collectively drafted the whole alphabet.
+ * Candidates for the game's rare letter: every letter that no player drafted
+ * and the pool did not draw — restricted to consonants. The rare letter is
+ * drawn once per game and stays the same across every round, and it can never
+ * be a vowel, so a round of all-consonant picks still has its vowel intact.
+ * May be empty when the room collectively drafted the whole consonant alphabet.
  */
 export function rareLetterCandidates(
   picks: readonly (readonly Letter[])[],
@@ -114,7 +117,32 @@ export function rareLetterCandidates(
   for (const pick of picks) {
     for (const letter of pick) taken.add(letter);
   }
-  return [...LETTER_POOL].filter((letter) => !taken.has(letter));
+  return [...LETTER_POOL].filter((letter) => !taken.has(letter) && !VOWEL_SET.has(letter));
+}
+
+const RARE_SET = new Set<Letter>(RARE_LETTER_SET);
+
+/**
+ * Draws the session's rare letter: a random consonant with `RARE_LETTER_SET`
+ * letters boosted `RARE_LETTER_BOOST`×, never a vowel. Returns `null` (no rare
+ * letter that game) when no consonant candidates remain.
+ */
+export function drawSessionRareLetter(
+  picks: readonly (readonly Letter[])[],
+  pool: readonly Letter[],
+  rng: Rng = Math.random.bind(Math),
+): Letter | null {
+  const candidates = rareLetterCandidates(picks, pool);
+  if (candidates.length === 0) return null;
+
+  const weights = candidates.map((letter) => (RARE_SET.has(letter) ? RARE_LETTER_BOOST : 1));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  let roll = rng() * total;
+  for (let index = 0; index < candidates.length; index += 1) {
+    roll -= weights[index]!;
+    if (roll < 0) return candidates[index]!;
+  }
+  return candidates[candidates.length - 1]!;
 }
 
 function frequencyRank(letter: Letter): number {

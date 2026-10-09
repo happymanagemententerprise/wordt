@@ -30,12 +30,16 @@ export function Review({ game }: { game: GameApi }): ReactNode {
               {step.reveal.awarded.length > 0 ? ` · +${step.reveal.value}` : ''}
             </p>
             <p className="reveal__word">{step.reveal.letter}</p>
-            <p className="reveal__who">
+<p className="reveal__who">
               {step.reveal.finders.length === 0
                 ? 'nobody used it this round'
-                : step.reveal.finders.length > 1
-                  ? `${step.reveal.finders.map((finder) => finder.credit).join(' and ')} both found it — nobody credited`
-                  : `${step.reveal.finders[0]!.credit} found it in “${step.reveal.finders[0]!.word}”`}
+                : step.reveal.zeroed.length > 0 && step.reveal.awarded.length === 0
+                  ? `${step.reveal.finders.map((finder) => finder.credit).join(' and ')} submitted the same rare word — it netted to zero`
+                  : step.reveal.zeroed.length > 0
+                    ? `${step.reveal.awarded.map((id) => step.reveal.finders.find((f) => f.id === id)?.credit ?? 'someone').join(', ')} kept it • ${step.reveal.zeroed.map((id) => step.reveal.finders.find((f) => f.id === id)?.credit ?? 'someone').join(', ')} shared a zeroed word`
+                    : step.reveal.awarded.length > 1
+                      ? `${step.reveal.finders.map((finder) => finder.credit).join(' and ')} both found it`
+                      : `${step.reveal.finders[0]!.credit} found it in "${step.reveal.finders[0]!.word}"`}
             </p>
           </>
         ) : step.kind === 'unique_word' ? (

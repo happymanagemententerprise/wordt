@@ -227,6 +227,8 @@ function rejectionMessage(reason: WordRejection | undefined): string {
       return 'That letter is not in this round\'s pool.';
     case 'DUPLICATE':
       return 'You already submitted that word.';
+    case 'RARE_USED':
+      return 'You already used this game\'s rare letter.';
     default:
       return 'Not in the dictionary.';
   }

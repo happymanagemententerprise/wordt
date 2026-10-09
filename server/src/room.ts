@@ -19,7 +19,7 @@ import {
   lettersPerTeamMember,
   mergeTeam,
   normalizeWord,
-  rareLetterCandidates,
+  drawSessionRareLetter,
   scoreRound,
   teamIdsForPlayerCount,
   teamName,
@@ -108,8 +108,10 @@ export class Room {
   round = 0;
   phaseEndsAt: number | null = null;
   letterValues: LetterValueTable | null = null;
-  /** This round's rare letter (drawn outside the pool), or null when none was. */
+  /** The game's rare letter, drawn once and kept for every round. */
   rareLetter: Letter | null = null;
+  /** Players who already spent their one lifetime rare-letter use. */
+  rareUsedBy = new Set<PlayerId>();
   lastRoundResult: RoundResult | null = null;
   notice: string | null = null;
   reviewSteps: ReviewStep[] = [];
@@ -210,6 +212,8 @@ export class Room {
       player.score = 0;
       player.lifetimeValidWords = 0;
     }
+    this.rareLetter = null;
+    this.rareUsedBy.clear();
     this.beginRound();
     return true;
   }
@@ -235,6 +239,7 @@ export class Room {
     this.lastRoundResult = null;
     this.letterValues = null;
     this.rareLetter = null;
+    this.rareUsedBy.clear();
     this.reviewSteps = [];
     this.reviewIndex = 0;
 
@@ -260,7 +265,7 @@ export class Room {
     this.reviewSteps = [];
     this.reviewIndex = 0;
     this.letterValues = null;
-    this.rareLetter = null;
+    // The rare letter survives across rounds: it is drawn once per game.
     this.feed.length = 0;
     this.pickLimit = this.teamsEnabled
       ? lettersPerTeamMember(TEAM_SIZE)
@@ -448,14 +453,14 @@ export class Room {
     const { pool, computerAdded } = buildPool(picks, POOL_SIZE);
     this.letterValues = computeLetterValues(picks, pool, new Set(computerAdded));
 
-    // The rare letter is drawn from letters nobody drafted and the pool skipped,
-    // so it never overlaps a pick or the pool. It is usable in words but has no
-    // place in the value table — its worth is the find bonus in the reveal.
-    const rareCandidates = rareLetterCandidates(picks, pool);
-    this.rareLetter =
-      rareCandidates.length > 0
-        ? rareCandidates[Math.floor(Math.random() * rareCandidates.length)]!
-        : null;
+    // The rare letter is drawn once per game, from letters nobody drafted and
+    // the pool skipped, so it never overlaps a pick or the pool. It is drawn
+    // from consonants weighted toward Q/X/J/Z, never a vowel, and it stays the
+    // same across every round. It has no place in the value table — its worth
+    // is the find bonus in the reveal.
+    if (this.rareLetter === null) {
+      this.rareLetter = drawSessionRareLetter(picks, pool);
+    }
 
     if (this.letterValues.entries.length === 0) {
       // Unreachable with a 15-letter pool, but never start a word phase blind.
@@ -499,7 +504,16 @@ export class Room {
     const already = new Set(player.validWords);
     const result: ValidationResult = validateWord(word, context, already);
 
-    if (result.ok) {
+    // The rare letter can be used once per player for the whole game; a word
+    // containing it after that is rejected like any other invalid submission.
+    const spent =
+      result.ok &&
+      this.rareLetter !== null &&
+      word.includes(this.rareLetter) &&
+      this.rareUsedBy.has(playerId);
+    const reason: WordRejection = !result.ok ? result.reason : 'DUPLICATE';
+
+    if (result.ok && !spent) {
       const score = [...word].reduce(
         (sum, letter) => sum + (this.letterValues?.values[letter] ?? 0),
         0,
@@ -507,20 +521,24 @@ export class Room {
       player.validWords.push(word);
       player.totalTries += 1;
       player.lifetimeValidWords += 1;
+      if (this.rareLetter !== null && word.includes(this.rareLetter)) {
+        this.rareUsedBy.add(playerId);
+      }
       this.pushFeed({ word, playerId, score });
       this.emitState();
       this.emitOwn(playerId);
       return { word, ok: true, score };
     }
 
-    // A duplicate is a no-op: it never counts as a wrong try.
-    if (result.reason !== 'DUPLICATE') {
-      player.wrongTries += 1;
-      player.totalTries += 1;
-      this.emitState();
-      this.emitOwn(playerId);
+    // A duplicate is the only no-op: it never counts as a wrong try.
+    if (!spent && reason === 'DUPLICATE') {
+      return { word, ok: false, reason };
     }
-    return { word, ok: false, reason: result.reason };
+    player.wrongTries += 1;
+    player.totalTries += 1;
+    this.emitState();
+    this.emitOwn(playerId);
+    return { word, ok: false, reason: spent ? 'RARE_USED' : reason };
   }
 
   // --------------------------------------------------------------- scoring
@@ -722,6 +740,7 @@ export class Room {
       hostId: this.host?.id ?? null,
       letterValues: this.letterValues,
       rareLetter: this.rareLetter,
+      rareUsedBy: [...this.rareUsedBy],
       usableLetterCount: this.letterValues?.entries.length ?? 0,
       minWordLength: MIN_WORD_LENGTH,
       pickLimit: this.pickLimit,

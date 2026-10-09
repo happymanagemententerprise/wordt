@@ -327,6 +327,7 @@ describe('scoreRound', () => {
       expect(result.rare).toBeDefined();
       expect(result.rare!.letter).toBe('A');
       expect(result.rare!.awarded).toEqual(['b']);
+      expect(result.rare!.zeroed).toEqual([]);
       expect(result.rare!.finders).toEqual([
         { id: 'b', credit: 'B', word: 'RATE' },
       ]);
@@ -353,20 +354,54 @@ describe('scoreRound', () => {
       ]);
     });
 
-    it('credits nobody when two players find it, but still lists both', () => {
+    it('pays every finder when their rare words differ', () => {
       const result = scoreRound({
-        players: [player('a', ['TREE']), player('b', ['RATE', 'MET'])],
+        players: [player('a', ['TREE']), player('b', ['RATE'])],
         letterValues: LETTER_VALUES,
         rareLetter: 'E',
       });
 
+      // TREE and RATE both contain E but the words differ, so both keep +10.
+      // RATE outscores TREE, so the credit order is b then a.
+      expect(result.rare!.awarded).toEqual(['b', 'a']);
+      expect(result.rare!.zeroed).toEqual([]);
+      for (const p of result.players) {
+        expect(p.bonuses.some((b) => b.stat === 'rare_letter')).toBe(true);
+      }
+    });
+
+    it('zeroes an identical rare word for every player who shared it', () => {
+      const result = scoreRound({
+        players: [player('a', ['TREE']), player('b', ['TREE'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'E',
+      });
+
+      // Both submitted TREE; it is shared, so it nets to zero and nobody is
+      // credited — the same-word penalty already zeroed the base anyway.
       expect(result.rare!.awarded).toEqual([]);
-      expect(result.rare!.finders.map((f) => f.id)).toEqual(['a', 'b']);
+      expect(result.rare!.zeroed).toEqual(['a', 'b']);
       for (const p of result.players) {
         expect(p.bonuses.some((b) => b.stat === 'rare_letter')).toBe(false);
+        expect(p.sameWordPenalty).toBe(-7);
+        expect(p.roundScore).toBe(p.draftPenalty + p.bonuses.reduce((s, b) => s + b.points, 0));
       }
-      // No rare find, so the round score is just base + other bonuses.
-      expect(result.rare!.finders).toHaveLength(2);
+    });
+
+    it('zeroes only the submitters when a rare word is shared by a subset', () => {
+      const result = scoreRound({
+        players: [player('a', ['TREE']), player('b', ['TREE']), player('c', ['TEAL'])],
+        letterValues: LETTER_VALUES,
+        rareLetter: 'E',
+      });
+
+      const a = result.players.find((p) => p.id === 'a')!;
+      const c = result.players.find((p) => p.id === 'c')!;
+      expect(result.rare!.zeroed).toEqual(['a', 'b']);
+      expect(result.rare!.awarded).toEqual(['c']);
+      // a and b's TREE nets to zero, c's TEAL stays and gets the +10.
+      expect(a.sameWordPenalty).toBe(-7);
+      expect(c.bonuses.find((b) => b.stat === 'rare_letter')?.points).toBe(10);
     });
 
     it('is absent from the result when no rare letter was drawn', () => {
@@ -384,6 +419,7 @@ describe('scoreRound', () => {
 
       expect(result.rare!.finders).toEqual([]);
       expect(result.rare!.awarded).toEqual([]);
+      expect(result.rare!.zeroed).toEqual([]);
       for (const p of result.players) {
         expect(p.bonuses.some((b) => b.stat === 'rare_letter')).toBe(false);
       }
