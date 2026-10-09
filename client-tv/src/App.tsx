@@ -53,7 +53,7 @@ export default function App(): ReactNode {
   const tv = useTv();
   const [showRules, setShowRules] = useState(false);
 
-  if (!tv.connected) return <Centered title="Connecting…" detail="Looking for the Wordt server." />;
+  if (!tv.connected) return <Centered title="Wordt by Happymanagement" detail="Looking for the Wordt server." />;
   if (!tv.watching) {
     if (showRules) return <Rules onBack={() => setShowRules(false)} />;
     return <RoomEntry error={tv.error} onHowToPlay={() => setShowRules(true)} onSubmit={(code) => void tv.watch(code)} />;
