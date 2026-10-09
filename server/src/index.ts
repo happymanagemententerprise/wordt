@@ -43,10 +43,9 @@ const MIME: Readonly<Record<string, string>> = {
 };
 
 function assetPath(urlPath: string): string | null {
-  const prefix = Object.keys(DISTS).find((key) => {
-    const rest = urlPath.slice(key.length);
-    return rest === '' || rest === '/' || rest.startsWith('/');
-  });
+  const prefix = Object.keys(DISTS).find(
+    (key) => urlPath === key || urlPath.startsWith(`${key}/`),
+  );
   if (!prefix) return null;
 
   const rest = (urlPath.slice(prefix.length) || '/').replace(/\/{2,}/g, '/');
