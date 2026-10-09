@@ -3,7 +3,9 @@ import { io, type Socket } from 'socket.io-client';
 
 import type { OwnState, PublicRoomState } from '@wordt/shared';
 
-const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3000';
+const SERVER_URL: string =
+  import.meta.env.VITE_SERVER_URL ??
+  (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin);
 
 export interface Ack {
   ok: boolean;

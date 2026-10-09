@@ -19,7 +19,7 @@ export function RoomEntry({
 
   return (
     <div className="tv-solo">
-      <p className="tv-brand tv-brand--hero">Wordt</p>
+      <p className="tv-brand tv-brand--hero">Wordt by Happy Management</p>
       <p className="tv-lead">Enter the room code shown on the host's phone.</p>
       <form className="tv-entry" onSubmit={submit}>
         <input

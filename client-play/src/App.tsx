@@ -59,7 +59,7 @@ export default function App(): ReactNode {
   const game = useGame();
   const { state, own } = game;
 
-  if (!game.connected) return <Splash title="Wordt by Happymanagement" detail="Looking for the Wordt server." />;
+  if (!game.connected) return <Splash title="Wordt by Happy Management" detail="Looking for the Wordt server." />;
   if (!game.seat) return <Join game={game} />;
   if (!state || !own) return <Splash title="Joining…" detail={game.seat.roomCode} />;
 

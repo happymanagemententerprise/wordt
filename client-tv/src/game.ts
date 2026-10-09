@@ -3,7 +3,9 @@ import { io, type Socket } from 'socket.io-client';
 
 import type { PublicRoomState } from '@wordt/shared';
 
-const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? 'http://localhost:3000';
+const SERVER_URL: string =
+  import.meta.env.VITE_SERVER_URL ??
+  (import.meta.env.DEV ? 'http://localhost:3000' : window.location.origin);
 
 export const socket: Socket = io(SERVER_URL);
 
@@ -14,7 +16,9 @@ export interface Ack {
 }
 
 /** The phone client the lobby QR code should point at. */
-export const PLAY_URL: string = import.meta.env.VITE_PLAY_URL ?? 'http://localhost:5173';
+export const PLAY_URL: string =
+  import.meta.env.VITE_PLAY_URL ??
+  (import.meta.env.DEV ? 'http://localhost:5173' : `${window.location.origin}/play`);
 
 function roomFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);

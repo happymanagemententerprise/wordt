@@ -62,7 +62,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
   return (
     <div className="app app--solo">
       <div className="hero">
-        <h1 className="hero__title">Wordt</h1>
+        <h1 className="hero__title">Wordt by Happy Management</h1>
         <p className="hero__tagline">Pick letters together. Make the most words.</p>
       </div>
 
