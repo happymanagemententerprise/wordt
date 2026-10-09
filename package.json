@@ -15,7 +15,9 @@
     "dev:server": "npm run dev --workspace @wordt/server",
     "dev:play": "npm run dev --workspace @wordt/client-play",
     "dev:tv": "npm run dev --workspace @wordt/client-tv",
-    "build": "npm run typecheck && npm run build --workspaces --if-present"
+    "build": "npm run typecheck && npm run build --workspaces --if-present",
+"start": "npm run start --workspace @wordt/server"
+
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
