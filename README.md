@@ -262,6 +262,8 @@ game has picked one:
 | `WORDT_VALUE_REVEAL_SECONDS`| 8       | how long the value table is shown    |
 | `WORDT_WORD_SECONDS`        | 120     | fallback word phase length           |
 | `WORDT_REVIEW_STEP_SECONDS` | 6       | each step of the round review        |
+| `WORDT_LOG_FILE`            | `logs/events.jsonl` | where the analytics log is appended (relative to the server's working directory) |
+| `WORDT_LOG_STDOUT`          | `true`  | also mirror every event line to stdout; set `0`/`false`/`no`/`off` to silence |
 | `VITE_SERVER_URL`           | `http://localhost:3000` | where clients connect |
 | `VITE_PLAY_URL`             | `http://localhost:5173` | phone URL the TV's QR encodes |
 
@@ -269,10 +271,45 @@ The timers are read once at server start.
 
 ---
 
+## Analytics log
+
+The server appends one JSON object per line (**JSONL**) to `logs/events.jsonl`
+(override with `WORDT_LOG_FILE`). Nothing about the game rules changes: the log is
+append-only, written from the server only, and a failed write is reported to the
+console but never interrupts play. Each line is also mirrored to stdout unless
+`WORDT_LOG_STDOUT` is turned off.
+
+Every line carries `ts` (ISO timestamp), `gameId` (unique per game session),
+`roomCode`, `round` (or `null` outside a round) and `type`, plus that event's
+fields. Players are identified by their opaque socket `playerId`; names, IPs and
+other personal data are never written.
+
+| `type`              | what it records |
+| ------------------- | --------------- |
+| `game_start`        | `playerCount`, `teamMode`, `roundSeconds` |
+| `picks_locked`      | `playerId`/`teamId`, `letters`, `msIntoPickPhase` |
+| `pool_built`        | `pool`, `overlapLetters`, `computerAddedLetters`, `rareLetter`, `letterValues` |
+| `word_submitted`    | `playerId`, `word`, `valid`, `reason?`, `countsAsWrongTry`, `points?`, `msIntoRound` |
+| `rare_letter_used`  | `playerId`, `word`, `round` |
+| `round_scored`      | per-player `baseScore`, `sharedWordPenalty`, `draftPenalty`, `bonuses`, `roundScore`, `totalScore`, plus the most-used words and the rare-letter winner |
+| `game_over`         | final `standings` (playerId/score/validWordCount) and `winners` |
+
+The log is append-only JSONL, so it is safe to `tail` while a game runs:
+
+```bash
+tail -f server/logs/events.jsonl
+```
+
+On Render's free tier the filesystem is ephemeral — the file is wiped on every
+deploy or restart. Point `WORDT_LOG_FILE` at a mounted disk (or forward stdout,
+which Render captures) if you need the log to survive.
+
+---
+
 ## Testing
 
 ```bash
-npm test                             # 70 scoring-engine unit tests
+npm test                             # scoring-engine + server unit tests
 npm run typecheck                    # every workspace
 npm run smoke --workspace @wordt/server
 npm run e2e  --workspace @wordt/client-play
@@ -280,11 +317,15 @@ npm run e2e  --workspace @wordt/client-play
 
 The **unit tests** cover letter values, the letter pool, missed-word finding,
 round scoring, bonuses, penalties, standings, teams and the winner
-determination.
+determination, plus the analytics logger (valid JSONL, and a failed write never
+throws).
 
 The **smoke test** plays a full round through the real socket protocol: two
 players, one word phase, the review, and a second round with the score carried
-over. It needs the server running.
+over. It also reads back the analytics log this run produced and asserts the
+events appear in order (`game_start` → `picks_locked` → `pool_built` →
+`word_submitted` → `round_scored` → `game_over`) with the expected fields. It
+needs the server running.
 
 The **e2e test** launches real Chrome through Playwright and drives two phone
 windows *and* the TV through a complete round, asserting what each screen shows.

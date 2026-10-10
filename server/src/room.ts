@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import type { Server } from 'socket.io';
 
 import {
@@ -16,11 +18,13 @@ import {
   WORD_PHASE_SECONDS,
   buildPool,
   computeLetterValues,
+  determineWinners,
   lettersPerTeamMember,
   mergeTeam,
   normalizeWord,
   drawSessionRareLetter,
   scoreRound,
+  sortStandings,
   teamIdsForPlayerCount,
   teamName,
   validateWord,
@@ -40,11 +44,13 @@ import type {
   ReviewStep,
   RoundPlayerInput,
   RoundResult,
+  StandingEntry,
   StatAward,
   ValidationResult,
   WordCheckContext,
   WordRejection,
 } from '@wordt/shared';
+import { logEvent } from './analytics';
 
 const DICTIONARY = loadDictionary();
 
@@ -121,15 +127,40 @@ export class Room {
   /** Word-phase length the host chose in the lobby, before this game. */
   wordSeconds: number | null = null;
   readonly feed: FeedItem[] = [];
+  /** Identifier for the current game session; null before a game starts. */
+  gameId: string | null = null;
 
   readonly players = new Map<PlayerId, RoomPlayer>();
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private pickStartedAt = 0;
+  private wordStartedAt = 0;
   private readonly io: Server;
   private destroyed = false;
 
   constructor(io: Server, code = makeRoomCode()) {
     this.io = io;
     this.code = code;
+  }
+
+  /**
+   * Emits one analytics event with this room's context. Analytics failures are
+   * swallowed inside `logEvent`, so logging can never affect the game.
+   */
+  private log(
+    type: string,
+    data: Record<string, unknown> = {},
+    round: number | null = this.round,
+  ): void {
+    logEvent(type, { gameId: this.gameId, roomCode: this.code, round, ...data });
+  }
+
+  private logPicksLocked(player: RoomPlayer): void {
+    this.log('picks_locked', {
+      playerId: player.id,
+      teamId: player.teamId,
+      letters: [...player.pick],
+      msIntoPickPhase: Math.max(0, Date.now() - this.pickStartedAt),
+    });
   }
 
   // ---------------------------------------------------------------- joining
@@ -207,6 +238,14 @@ export class Room {
     if (this.host?.id !== playerId) return false;
     if ([...this.players.values()].filter((p) => p.connected).length < 2) return false;
 
+    const playerCount = [...this.players.values()].filter((p) => p.connected).length;
+    this.gameId = `g_${randomUUID()}`;
+    this.log(
+      'game_start',
+      { playerCount, teamMode: this.teamsEnabled, roundSeconds: this.wordSeconds },
+      null,
+    );
+
     this.round = 0;
     for (const player of this.players.values()) {
       player.score = 0;
@@ -240,6 +279,7 @@ export class Room {
     this.letterValues = null;
     this.rareLetter = null;
     this.rareUsedBy.clear();
+    this.gameId = null;
     this.reviewSteps = [];
     this.reviewIndex = 0;
 
@@ -281,6 +321,7 @@ export class Room {
       player.totalTries = 0;
     }
 
+    this.pickStartedAt = Date.now();
     this.setPhase('PICKING', PICK_SECONDS, () => this.finishPicking());
     this.emitState();
     this.emitOwn();
@@ -305,9 +346,45 @@ export class Room {
     this.notice = null;
     this.reviewSteps = [];
     this.reviewIndex = 0;
+    this.logGameOver();
     this.emitState();
     this.emitOwn();
     return true;
+  }
+
+  /** Logs the final standings and winners when a game reaches GAME_OVER. */
+  private logGameOver(): void {
+    if (!this.gameId) return;
+
+    const entries: StandingEntry[] = this.teamsEnabled
+      ? this.teamList().map((team) => ({
+          id: team.id,
+          name: team.name,
+          score: team.score,
+          totalValidWords: [...this.players.values()]
+            .filter((player) => player.teamId === team.id)
+            .reduce((sum, player) => sum + player.lifetimeValidWords, 0),
+        }))
+      : [...this.players.values()].map((player) => ({
+          id: player.id,
+          name: player.name,
+          score: player.score,
+          totalValidWords: player.lifetimeValidWords,
+        }));
+
+    const { winners } = determineWinners(entries);
+    this.log(
+      'game_over',
+      {
+        standings: sortStandings(entries).map((entry) => ({
+          playerId: entry.id,
+          score: entry.score,
+          validWordCount: entry.totalValidWords,
+        })),
+        winners: winners.map((winner) => winner.id),
+      },
+      null,
+    );
   }
 
   /** Host hands control to another connected player. Works in any phase. */
@@ -431,7 +508,9 @@ export class Room {
     if (this.phase !== 'PICKING') return false;
     const player = this.players.get(playerId);
     if (!player) return false;
+    const newlyLocked = !player.pickLocked;
     player.pickLocked = true;
+    if (newlyLocked) this.logPicksLocked(player);
     this.emitState();
 
     // Everyone locked => the phase can close early.
@@ -443,15 +522,18 @@ export class Room {
   }
 
   private finishPicking(): void {
+    const forced = [...this.players.values()].filter((player) => !player.pickLocked);
     const picks = [...this.players.values()].map((player) => {
       player.pickLocked = true;
       return player.pick;
     });
+    for (const player of forced) this.logPicksLocked(player);
 
     // Overlap letters become the "tension" pool; the computer tops the lot up
     // to a fixed size with letters nobody overlapped on.
     const { pool, computerAdded } = buildPool(picks, POOL_SIZE);
-    this.letterValues = computeLetterValues(picks, pool, new Set(computerAdded));
+    const computerSet = new Set(computerAdded);
+    this.letterValues = computeLetterValues(picks, pool, computerSet);
 
     // The rare letter is drawn once per game, from letters nobody drafted and
     // the pool skipped, so it never overlaps a pick or the pool. It is drawn
@@ -461,6 +543,14 @@ export class Room {
     if (this.rareLetter === null) {
       this.rareLetter = drawSessionRareLetter(picks, pool);
     }
+
+    this.log('pool_built', {
+      pool: [...pool],
+      overlapLetters: pool.filter((letter) => !computerSet.has(letter)),
+      computerAddedLetters: [...computerAdded],
+      rareLetter: this.rareLetter,
+      letterValues: this.letterValues,
+    });
 
     if (this.letterValues.entries.length === 0) {
       // Unreachable with a 15-letter pool, but never start a word phase blind.
@@ -478,6 +568,7 @@ export class Room {
   }
 
   private beginWordPhase(): void {
+    this.wordStartedAt = Date.now();
     this.setPhase('WORDS', this.wordSeconds ?? WORD_SECONDS, () => this.scoreAndReview());
     this.emitState();
     this.emitOwn();
@@ -521,8 +612,17 @@ export class Room {
       player.validWords.push(word);
       player.totalTries += 1;
       player.lifetimeValidWords += 1;
+      this.log('word_submitted', {
+        playerId,
+        word,
+        valid: true,
+        countsAsWrongTry: false,
+        points: score,
+        msIntoRound: Math.max(0, Date.now() - this.wordStartedAt),
+      });
       if (this.rareLetter !== null && word.includes(this.rareLetter)) {
         this.rareUsedBy.add(playerId);
+        this.log('rare_letter_used', { playerId, word });
       }
       this.pushFeed({ word, playerId, score });
       this.emitState();
@@ -532,13 +632,30 @@ export class Room {
 
     // A duplicate is the only no-op: it never counts as a wrong try.
     if (!spent && reason === 'DUPLICATE') {
+      this.log('word_submitted', {
+        playerId,
+        word,
+        valid: false,
+        reason: 'DUPLICATE',
+        countsAsWrongTry: false,
+        msIntoRound: Math.max(0, Date.now() - this.wordStartedAt),
+      });
       return { word, ok: false, reason };
     }
     player.wrongTries += 1;
     player.totalTries += 1;
+    const rejection: WordRejection = spent ? 'RARE_USED' : reason;
+    this.log('word_submitted', {
+      playerId,
+      word,
+      valid: false,
+      reason: rejection,
+      countsAsWrongTry: true,
+      msIntoRound: Math.max(0, Date.now() - this.wordStartedAt),
+    });
     this.emitState();
     this.emitOwn(playerId);
-    return { word, ok: false, reason: spent ? 'RARE_USED' : reason };
+    return { word, ok: false, reason: rejection };
   }
 
   // --------------------------------------------------------------- scoring
@@ -573,11 +690,40 @@ export class Room {
       }
     }
 
+    this.log('round_scored', this.roundScoredData(result));
+
     this.reviewSteps = buildReviewSteps(result);
     this.reviewIndex = 0;
     this.setPhase('REVIEW', REVIEW_SECONDS, () => this.stepReview());
     this.emitState();
     this.emitOwn();
+  }
+
+  /** Per-unit scores plus the round's highlights, for the analytics log. */
+  private roundScoredData(result: RoundResult): Record<string, unknown> {
+    const totals = new Map<PlayerId, number>();
+    for (const player of this.players.values()) {
+      if (this.teamsEnabled) {
+        if (player.teamId) totals.set(player.teamId, player.score);
+      } else {
+        totals.set(player.id, player.score);
+      }
+    }
+
+    return {
+      players: result.players.map((entry) => ({
+        playerId: entry.id,
+        baseScore: entry.baseScore,
+        sharedWordPenalty: entry.sameWordPenalty,
+        draftPenalty: entry.draftPenalty,
+        bonuses: entry.bonuses.map((bonus) => ({ stat: bonus.stat, points: bonus.points })),
+        roundScore: entry.roundScore,
+        totalScore: totals.get(entry.id) ?? 0,
+      })),
+      mostUsedWords: [...result.mostUsedWords],
+      rareLetter: result.rare?.letter ?? this.rareLetter,
+      rareLetterWinners: result.rare?.awarded ?? [],
+    };
   }
 
   /**
@@ -630,6 +776,7 @@ export class Room {
         this.clearTimer();
         this.phase = 'GAME_OVER';
         this.phaseEndsAt = null;
+        this.logGameOver();
         this.emitState();
         this.emitOwn();
         return;

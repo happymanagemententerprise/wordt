@@ -10,9 +10,13 @@
  * `state` before it acknowledges an action — a listener attached after the
  * ack would miss that update.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { io, type Socket } from 'socket.io-client';
 
 const URL = process.env.WORDT_URL ?? 'http://localhost:3000';
+const LOG_FILE = process.env.WORDT_LOG_FILE ?? join(process.cwd(), 'logs', 'events.jsonl');
 
 interface Ack {
   ok: boolean;
@@ -88,6 +92,38 @@ function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(message);
 }
 
+interface LogEvent {
+  ts: string;
+  gameId: string | null;
+  roomCode: string | null;
+  round: number | null;
+  type: string;
+  [key: string]: unknown;
+}
+
+/** Length of the log file so far, so only this run's events are read back. */
+function logLength(): number {
+  try {
+    return readFileSync(LOG_FILE, 'utf8').length;
+  } catch {
+    return 0;
+  }
+}
+
+function readLogEvents(offset: number): LogEvent[] {
+  let text: string;
+  try {
+    text = readFileSync(LOG_FILE, 'utf8');
+  } catch {
+    return [];
+  }
+  return text
+    .slice(offset)
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line) => JSON.parse(line) as LogEvent);
+}
+
 async function main(): Promise<void> {
   const ann = await connect();
   const bob = await connect();
@@ -122,6 +158,7 @@ async function main(): Promise<void> {
   const withTimer = await awaitState(ann, (s) => s.roundSeconds === 30, 5000, 'roundSeconds 30');
   assert(withTimer.roundSeconds === 30, 'lobby should expose the chosen round length');
 
+  const logOffset = logLength();
   assert((await emit(ann, 'host:start')).ok, 'host should start the game');
 
   const picking = await awaitState(ann, (s) => s.phase === 'PICKING', 5000, 'PICKING');
@@ -154,7 +191,7 @@ async function main(): Promise<void> {
   );
   console.log(`rare letter drawn: ${valueTable.rareLetter}`);
 
-  const words = await awaitState(ann, (s) => s.phase === 'WORDS', 8000, 'WORDS');
+  const words = await awaitState(ann, (s) => s.phase === 'WORDS', 15000, 'WORDS');
   console.log(`WORDS phase, minimum length ${words.minWordLength}`);
   assert(words.minWordLength === 3, `expected minimum word length 3, got ${words.minWordLength}`);
 
@@ -199,6 +236,57 @@ async function main(): Promise<void> {
   }
   assert(state.phase === 'RESULTS', `expected RESULTS, got ${state.phase}`);
 
+  // --- analytics log: one valid JSON line per event, in the expected order ---
+  const events = readLogEvents(logOffset).filter((event) => event.roomCode === code);
+  const types = events.map((event) => event.type);
+  console.log(`analytics events: ${types.join(' -> ')}`);
+  assert(events.length > 0, 'no analytics events were written for this game');
+  for (const event of events) {
+    assert(typeof event.ts === 'string' && event.ts.length > 0, 'every event needs a timestamp');
+    assert(typeof event.gameId === 'string' && event.gameId.length > 0, 'every event needs a gameId');
+  }
+
+  const order = ['game_start', 'picks_locked', 'pool_built', 'word_submitted', 'round_scored'];
+  let lastIndex = -1;
+  for (const type of order) {
+    const index = types.indexOf(type);
+    assert(index !== -1, `analytics log is missing a ${type} event`);
+    assert(index > lastIndex, `analytics ${type} event is out of order`);
+    lastIndex = index;
+  }
+  assert(
+    types.filter((type) => type === 'picks_locked').length >= 2,
+    'expected a picks_locked event per player',
+  );
+
+  const start = events.find((event) => event.type === 'game_start');
+  assert(Number(start?.playerCount) === 2, 'game_start should record two players');
+  assert(start?.teamMode === false, 'game_start should record team mode off');
+  assert(Number(start?.roundSeconds) === 30, 'game_start should record the chosen round length');
+
+  const pool = events.find((event) => event.type === 'pool_built');
+  assert(Array.isArray(pool?.pool) && (pool!.pool as string[]).length === 15, 'pool_built should record the 15-letter pool');
+  assert(Array.isArray(pool?.overlapLetters), 'pool_built should record overlap letters');
+  assert(Array.isArray(pool?.computerAddedLetters), 'pool_built should record computer-added letters');
+  assert('rareLetter' in (pool ?? {}), 'pool_built should record the rare letter');
+
+  const submissions = events.filter((event) => event.type === 'word_submitted');
+  assert(
+    submissions.some((event) => event.valid === true && typeof event.points === 'number'),
+    'a valid submission should record its points',
+  );
+  assert(
+    submissions.some((event) => event.valid === false && event.reason === 'DUPLICATE' && event.countsAsWrongTry === false),
+    'a duplicate should be logged as a no-op',
+  );
+  assert(
+    submissions.some((event) => event.valid === false && event.reason === 'TOO_SHORT' && event.countsAsWrongTry === true),
+    'a too-short word should be logged as a wrong try',
+  );
+
+  const scored = events.find((event) => event.type === 'round_scored');
+  assert(Array.isArray(scored?.players) && (scored!.players as unknown[]).length === 2, 'round_scored should report both players');
+
   const annScore = state.players.find((p: any) => p.id === annId).score;
   const bobScore = state.players.find((p: any) => p.id === bobId).score;
   console.log(`standings after round 1: Ann=${annScore} Bob=${bobScore}`);
@@ -211,6 +299,17 @@ async function main(): Promise<void> {
   const carried = round2.players.find((p: any) => p.id === annId).score;
   assert(carried === annScore, `scores should carry over: ${carried} !== ${annScore}`);
   console.log(`round 2 started, carried score ${carried}`);
+
+  // Ending the game must log final standings and winners.
+  assert((await emit(ann, 'host:end')).ok, 'host should be able to end the game');
+  await awaitState(ann, (s) => s.phase === 'GAME_OVER', 5000, 'GAME_OVER');
+  const overEvents = readLogEvents(logOffset).filter((event) => event.roomCode === code);
+  const overTypes = overEvents.map((event) => event.type);
+  const gameOver = overEvents.find((event) => event.type === 'game_over');
+  assert(gameOver, 'ending the game should write a game_over event');
+  assert(overTypes.indexOf('game_over') > overTypes.indexOf('round_scored'), 'game_over should follow the round scoring');
+  assert(Array.isArray(gameOver?.standings) && (gameOver!.standings as unknown[]).length === 2, 'game_over should list both players');
+  assert(Array.isArray(gameOver?.winners) && (gameOver!.winners as unknown[]).length >= 1, 'game_over should name a winner');
 
   console.log('\nSMOKE TEST PASSED');
 }
