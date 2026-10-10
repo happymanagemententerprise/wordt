@@ -4,6 +4,14 @@
 export const PICK_PHASE_SECONDS = 30;
 export const WORD_PHASE_SECONDS = 120;
 export const ROUNDS = 3;
+/** How many rounds a game runs. The host picks one of these in the lobby. */
+export const ROUND_COUNT_CHOICES = [3, 5, null] as const;
+export const DEFAULT_ROUND_COUNT = ROUNDS;
+
+/** Human-readable round counter, e.g. "Round 2 of 5", or "Round 7" when unlimited. */
+export function formatRound(round: number, roundCount: number | null): string {
+  return roundCount == null ? `Round ${round}` : `Round ${round} of ${roundCount}`;
+}
 /** The host chooses the word-phase length before every game. */
 export const ROUND_SECONDS_MIN = 10;
 export const ROUND_SECONDS_MAX = 600;

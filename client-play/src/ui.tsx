@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
-import type { LetterValueTable, PublicPlayer } from '@wordt/shared';
+import { formatRound, type LetterValueTable, type PublicPlayer } from '@wordt/shared';
 
 /** Seconds remaining until the server ends the current phase. */
 export function useCountdown(endsAt: number | null): number {
@@ -33,10 +33,10 @@ export function Countdown({ endsAt, hint }: { endsAt: number | null; hint?: stri
   );
 }
 
-export function PhasePill({ round, roundCount, phase }: { round: number; roundCount: number; phase: string }): ReactNode {
+export function PhasePill({ round, roundCount, phase }: { round: number; roundCount: number | null; phase: string }): ReactNode {
   return (
     <div className="pills">
-      <span className="pill">Round {round}/{roundCount}</span>
+      <span className="pill">{formatRound(round, roundCount)}</span>
       <span className="pill pill--phase">{phaseLabel(phase)}</span>
     </div>
   );
@@ -70,11 +70,13 @@ export function Standings({
   activeId,
   showStats = false,
   onMakeHost,
+  onKick,
 }: {
   players: PublicPlayer[];
   activeId?: string;
   showStats?: boolean;
   onMakeHost?: (playerId: string) => void;
+  onKick?: (playerId: string) => void;
 }): ReactNode {
   return (
     <ol className="standings">
@@ -102,6 +104,18 @@ export function Standings({
                 onClick={() => onMakeHost(player.id)}
               >
                 Host
+              </button>
+            </span>
+          ) : null}
+          {onKick && player.id !== activeId ? (
+            <span className="standing__actions">
+              <button
+                className="make-host make-host--kick"
+                type="button"
+                aria-label={`Remove ${player.name} from the room`}
+                onClick={() => onKick(player.id)}
+              >
+                Remove
               </button>
             </span>
           ) : null}

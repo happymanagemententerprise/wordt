@@ -42,8 +42,11 @@ npm run dev:tv         # just the TV client
 
 ## How to play
 
-These rules are printed on-screen too: the phone client has a *How to play* link
-above its join form, and the TV client has one on its room-code entry page.
+These rules are shown on-screen too: the phone client has a *How to play* link
+above its join form, and the TV client has one on its room-code entry page. Both
+now open an illustrated **carousel** — swipe or use the arrows on the phone,
+arrow keys or the on-screen arrows on the TV. The slides live in each client's
+`public/how-to-play/`.
 
 **1. Pick letters.** Every player chooses up to a share of the alphabet. Two
 players get 15 letters each, three or more get 10. Letters that **two or more
@@ -129,6 +132,13 @@ lobby (30s, 1m, 1m 30s, or 2m, or anything from 10 to 600 seconds). The game
 won't start until a length is chosen. Rounds within a game all use that length.
 `WORDT_WORD_SECONDS` remains the fallback for anything that isn't a live game.
 
+### Choosing how many rounds
+
+Right below the round length the host picks how many rounds to play: **3** (the
+default), **5**, or **Unlimited**. Unlimited keeps the round loop going until the
+host ends the game with *End game*. The choice is made in the lobby and applies
+for the whole session; `Next round` is hidden once the chosen number is reached.
+
 ### Playing with teams
 
 The host can turn **team mode** on in the lobby. Teams are always two members,
@@ -159,8 +169,13 @@ The host can hand the crown to any connected player at any time by tapping
 *Host* on their row in the lobby. After a transfer the new host owns the Start/End
 controls for the rest of the session.
 
-Rounds repeat for `ROUNDS` (3). Final standings are ordered by score, then by
-total valid words; players still level share the win.
+The host can also **remove** a disruptive player by tapping *Remove* on their row.
+That player is dropped from the room and returned to their home page; they can
+rejoin with the room code. The host cannot remove themselves.
+
+Rounds repeat for the host's chosen count (3 by default, 5, or unlimited). Final
+standings are ordered by score, then by total valid words; players still level
+share the win.
 
 ---
 
@@ -227,10 +242,12 @@ repo cache from connect time for exactly that reason.
 | `host:lobby`    | —                        | host  | back to the lobby               |
 | `host:end`      | —                        | host  | end the game now → `GAME_OVER`  |
 | `host:timer`    | `{ seconds }`            | host  | set the round length (lobby)    |
+| `host:rounds`   | `{ rounds }`             | host  | set rounds to play: `3`, `5`, or `null` for unlimited (lobby) |
 | `host:teams`    | `{ enabled }`            | host  | turn team mode on/off (lobby)   |
 | `team:set`      | `{ teamId }`             | phone | move your seat to a team (lobby)|
 | `review:next`   | —                        | host  | advance the review one step     |
 | `host:transfer` | `{ playerId }`           | host  | hand the host crown to another connected player |
+| `host:kick`     | `{ playerId }`           | host  | remove a player from the room   |
 | `pick:set`      | `{ letters }`            | phone | set this player's pick          |
 | `pick:lock`     | —                        | phone | lock this player's pick         |
 | `word:submit`   | `{ word }`               | phone | submit a word                   |
@@ -241,6 +258,7 @@ server → client:
 - `state` — `PublicRoomState`, the room as everyone sees it
 - `own` — `OwnState`, only to the player the seat belongs to
 - `room:ended` — the session is over (the host left); every client returns home
+- `room:removed` — the host removed this player; that phone returns home
 
 Phases: `LOBBY → PICKING → VALUE_TABLE → WORDS → NOTICE → REVIEW → RESULTS`,
 repeating for each round, ending in `GAME_OVER`.
@@ -380,6 +398,8 @@ Things the spec left open, and what this build does:
 11. **Round length is a host choice** (10–600s, suggested 30/60/90/120) made in
    the lobby before the game starts; the game cannot start without one. Picks
    the first game's length, reused for every round until the room is recreated.
+   The host also picks the **round count** there (3, 5, or unlimited;
+   `DEFAULT_ROUND_COUNT` is 3).
 12. **Room codes** are 5 characters from `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`
     (no `I`, `O`, `0`, `1`, so they are readable aloud).
 13. **Empty rooms are deleted 5 minutes** after the last phone and the last TV
@@ -408,6 +428,16 @@ Things the spec left open, and what this build does:
     and revealed in the review as its own step. Only a single finder — one
     player, or one team whose merged words contain the letter — earns the 10;
     if two or more players find it, nobody is credited, mirroring the
-    shared-word rule. Both clients mark the rare letter on the pool screens from
-    the value table onward. When the players collectively drafted the whole
-    alphabet there are no candidates and no rare letter is drawn that round.
+     shared-word rule. Both clients mark the rare letter on the pool screens from
+     the value table onward. When the players collectively drafted the whole
+     alphabet there are no candidates and no rare letter is drawn that round.
+21. **Unique words are reviewed together.** All unique words revealed in a round
+    are grouped by the unit that found them and shown as a single review step,
+    instead of one step per word — a long list no longer drags the review out.
+22. **The phone home screen defaults to Join.** It shows two tabs, *Join a room*
+    (default, room code first) and *Create a room*. For a link with `?room=CODE`
+    the tabs are hidden and the code is pre-filled; editing `?room=` in the URL
+    updates the form live.
+23. **Kicking is host-only and lobby/round agnostic.** A removed player's socket
+    is detached and their seat freed immediately (unlike a disconnect, they no
+    longer appear), and they can rejoin later with the room code.

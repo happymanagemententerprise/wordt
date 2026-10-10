@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import {
+  ROUND_COUNT_CHOICES,
   ROUND_SECONDS_CHOICES,
   TEAM_SIZE,
   teamIdsForPlayerCount,
@@ -41,9 +42,10 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
         players={state.players}
         activeId={own.id}
         onMakeHost={own.isHost ? (targetId) => void game.transferHost(targetId) : undefined}
+        onKick={own.isHost ? (targetId) => void game.kickPlayer(targetId) : undefined}
       />
       {own.isHost ? (
-        <p className="hint">Tap Host on any player to hand control over before you leave.</p>
+        <p className="hint">Tap Host to hand control over, or Remove to kick someone out.</p>
       ) : null}
 
       {state.teamsEnabled ? (
@@ -102,6 +104,32 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
         {own.isHost
           ? 'Pick how long everyone gets to write words. (Locks in for this game.)'
           : `The host has set ${state.roundSeconds ? formatSeconds(state.roundSeconds) : 'no round length'} for each round.`}
+      </p>
+
+      <h3 className="subhead">
+        Rounds
+        <span className="count">{state.roundCount == null ? 'unlimited' : state.roundCount}</span>
+      </h3>
+      <div className="timer-choices" role="group" aria-label="Number of rounds">
+        {ROUND_COUNT_CHOICES.map((count) => {
+          const chosen = state.roundCount === count;
+          return (
+            <button
+              key={count === null ? 'unlimited' : count}
+              type="button"
+              className={`chip-btn${chosen ? ' chip-btn--on' : ''}`}
+              disabled={game.busy || (!own.isHost && !chosen)}
+              onClick={() => void game.setRoundCount(count)}
+            >
+              {count === null ? 'Unlimited' : count}
+            </button>
+          );
+        })}
+      </div>
+      <p className="hint">
+        {own.isHost
+          ? 'Unlimited plays until you end the game yourself.'
+          : `The host has chosen ${state.roundCount == null ? 'unlimited rounds' : `${state.roundCount} rounds`}.`}
       </p>
 
       {own.isHost ? (

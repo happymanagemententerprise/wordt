@@ -129,6 +129,14 @@ export interface UniqueWordReveal {
   credit: string;
 }
 
+/** One unit's unique words, for the combined "unique words" review step. */
+export interface UniqueWordGroup {
+  playerId: PlayerId;
+  /** "Alice" or "Team A · Alice". */
+  credit: string;
+  words: { word: string; points: number }[];
+}
+
 /** One unit's share of the draft penalty, revealed before the leaderboard. */
 export interface DraftPenaltyEntry {
   id: PlayerId;
@@ -198,7 +206,7 @@ export interface RoomPlayer {
 /** One step of the end-of-round result review, revealed on the TV in order. */
 export type ReviewStep =
   | { kind: 'rare_letter'; reveal: RareLetterReveal }
-  | { kind: 'unique_word'; word: string; playerId: PlayerId; playerName: string; points: number; credit: string }
+  | { kind: 'unique_words'; groups: UniqueWordGroup[] }
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }
   | { kind: 'draft_penalty'; entries: DraftPenaltyEntry[] }
@@ -251,7 +259,8 @@ export interface PublicRoomState {
   roomCode: RoomCode;
   phase: Phase;
   round: number;
-  roundCount: number;
+  /** The host's chosen round count, or null for unlimited rounds. */
+  roundCount: number | null;
   phaseEndsAt: number | null;
   players: PublicPlayer[];
   hostId: PlayerId | null;

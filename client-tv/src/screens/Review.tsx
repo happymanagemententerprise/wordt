@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-import type { PublicRoomState, ReviewStep } from '@wordt/shared';
+import { formatRound, type PublicRoomState, type ReviewStep } from '@wordt/shared';
 
 import { rankChanges } from '../scoreboard';
 import { Standings } from '../ui';
@@ -40,16 +40,33 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
         </div>
       );
     }
-    case 'unique_word':
+    case 'unique_words': {
+      const columns = [step.groups.slice(0, Math.ceil(step.groups.length / 2)), step.groups.slice(Math.ceil(step.groups.length / 2))].filter((column) => column.length > 0);
       return (
-        <div className="tv-reveal">
-          <p className="tv-eyebrow">Found by one player only</p>
-          <p className="tv-reveal__word">{step.word}</p>
-          <p className="tv-reveal__who">
-            {step.credit} <span className="tv-reveal__points">+{step.points}</span>
-          </p>
+        <div className="tv-reveal tv-reveal--unique">
+          <p className="tv-eyebrow">Words only one player found</p>
+          <div className="tv-unique">
+            {columns.map((column, index) => (
+              <div key={index} className="tv-unique__col">
+                {column.map((group) => (
+                  <div key={group.playerId} className="tv-unique__group">
+                    <p className="tv-unique__who">{group.credit}</p>
+                    <p className="tv-unique__words">
+                      {group.words.map((word) => (
+                        <span key={word.word} className="tv-unique__word">
+                          {word.word}
+                          <em>+{word.points}</em>
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       );
+    }
     case 'most_used_word':
       return (
         <div className="tv-reveal">
@@ -133,9 +150,7 @@ export function Review({ state }: { state: PublicRoomState }): ReactNode {
     <section className="tv-stage tv-stage--review">
       <header className="tv-head">
         <div>
-          <p className="tv-eyebrow">
-            Round {state.round} of {state.roundCount}
-          </p>
+          <p className="tv-eyebrow">{formatRound(state.round, state.roundCount)}</p>
           <h2>Review</h2>
         </div>
         {state.reviewSteps.length > 0 ? (

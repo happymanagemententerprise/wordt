@@ -1163,6 +1163,125 @@ h2 {
   }
 }
 
+/* ----------------------------------------------------------------- slides */
+
+.tv-slides {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.75rem, 2vw, 2rem);
+  width: 100%;
+}
+
+.tv-slide {
+  width: min(100%, 72rem);
+  max-height: 72vh;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  user-select: none;
+}
+
+.tv-slides__nav {
+  flex: 0 0 auto;
+  width: clamp(3rem, 5vw, 5rem);
+  height: clamp(3rem, 5vw, 5rem);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tv-slides__nav:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tv-slides__dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.tv-slides__dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.tv-slides__dot--on {
+  background: var(--accent);
+}
+
+.tv-slides__count {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ unique words */
+
+.tv-unique {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 2.5rem);
+  width: 100%;
+}
+
+.tv-unique__col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+}
+
+.tv-unique__group {
+  padding: clamp(0.6rem, 1vw, 1rem) clamp(0.9rem, 1.4vw, 1.4rem);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.tv-unique__who {
+  margin: 0 0 0.3rem;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+}
+
+.tv-unique__words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin: 0;
+}
+
+.tv-unique__word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.9rem);
+  font-weight: 600;
+}
+
+.tv-unique__word em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.8em;
+}
+
 /* ------------------------------------------------------------------ podium */
 
 .tv-podium-wrap {

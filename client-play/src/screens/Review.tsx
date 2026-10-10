@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { formatRound } from '@wordt/shared';
+
 import type { GameApi } from '../game';
 import { Standings } from '../ui';
 
@@ -16,9 +18,7 @@ export function Review({ game }: { game: GameApi }): ReactNode {
 
   return (
     <section className="screen">
-      <p className="eyebrow">
-        Round {state.round} of {state.roundCount}
-      </p>
+      <p className="eyebrow">{formatRound(state.round, state.roundCount)}</p>
 
       <div className="reveal" key={state.reviewIndex} aria-live="polite">
         {!step ? (
@@ -42,11 +42,20 @@ export function Review({ game }: { game: GameApi }): ReactNode {
                       : `${step.reveal.finders[0]!.credit} found it in "${step.reveal.finders[0]!.word}"`}
             </p>
           </>
-        ) : step.kind === 'unique_word' ? (
+        ) : step.kind === 'unique_words' ? (
           <>
-            <p className="eyebrow">Unique word · +{step.points}</p>
-            <p className="reveal__word">{step.word}</p>
-            <p className="reveal__who">only {step.credit} found it</p>
+            <p className="eyebrow">Unique words</p>
+            <div className="unique-groups">
+              {step.groups.map((group) => (
+                <div key={group.playerId} className="unique-group">
+                  <p className="unique-group__who">{group.credit}</p>
+                  <p className="unique-group__words">
+                    {group.words.map((word) => `${word.word} +${word.points}`).join(' · ')}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="reveal__who">words only these players found</p>
           </>
         ) : step.kind === 'most_used_word' ? (
           <>

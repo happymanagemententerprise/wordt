@@ -1028,6 +1028,208 @@ h2 {
   color: var(--accent);
 }
 
+.rules__item::marker {
+  color: var(--accent);
+}
+
+.slides {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.slide {
+  flex: 1;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  user-select: none;
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.slides__nav {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.slides__nav:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.slides__dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.slides__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.slides__dot--on {
+  background: var(--accent);
+}
+
+.rules__count {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- join chooser --------------------------------------------------------- */
+
+.chooser {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.chooser__tab {
+  padding: 0.6rem 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.chooser__tab--on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.make-host--kick {
+  color: var(--bad);
+}
+
+/* --- unique words --------------------------------------------------------- */
+
+.unique-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.unique-group {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.unique-group__who {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.unique-group__words {
+  margin: 0.2rem 0 0;
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* --- final results -------------------------------------------------------- */
+
+.screen--final {
+  position: relative;
+}
+
+.champion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, rgba(255, 87, 34, 0.18), rgba(255, 235, 59, 0.06));
+  animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.champion__label {
+  margin: 0;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.champion__name {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.champion__score {
+  margin: 0;
+  color: var(--muted);
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti__piece {
+  position: absolute;
+  top: -10%;
+  left: var(--x);
+  width: 0.5rem;
+  height: 0.9rem;
+  border-radius: 2px;
+  background: var(--color);
+  opacity: 0.9;
+  animation: confetti-fall var(--dur, 3s) linear var(--delay, 0s) infinite;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(var(--drift), 110vh, 0) rotate(540deg);
+    opacity: 0;
+  }
+}
+
 /* --- motion --------------------------------------------------------------- */
 
 .app,

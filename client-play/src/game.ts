@@ -85,8 +85,10 @@ export interface GameApi {
   endGame: () => Promise<Ack>;
   setTeamsEnabled: (enabled: boolean) => Promise<Ack>;
   setRoundSeconds: (seconds: number) => Promise<Ack>;
+  setRoundCount: (rounds: number | null) => Promise<Ack>;
   setTeam: (teamId: string) => Promise<Ack>;
   transferHost: (playerId: string) => Promise<Ack>;
+  kickPlayer: (playerId: string) => Promise<Ack>;
   setPick: (letters: string[]) => Promise<Ack>;
   lockPick: () => Promise<Ack>;
   submitWord: (word: string) => Promise<Ack>;
@@ -150,12 +152,17 @@ export function useGame(): GameApi {
     };
     const onDisconnect = () => setConnected(false);
     const onRoomEnded = () => returnHome(setSeat, setState, setOwn);
+    const onRoomRemoved = () => {
+      showError('The host removed you from the room.');
+      returnHome(setSeat, setState, setOwn);
+    };
 
     socket.on('state', onState);
     socket.on('own', onOwn);
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('room:ended', onRoomEnded);
+    socket.on('room:removed', onRoomRemoved);
     if (socket.connected) {
       setConnected(true);
       rejoin();
@@ -167,9 +174,10 @@ export function useGame(): GameApi {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('room:ended', onRoomEnded);
+      socket.off('room:removed', onRoomRemoved);
       if (errorTimer.current) clearTimeout(errorTimer.current);
     };
-  }, [dismissError, rejoin]);
+  }, [dismissError, rejoin, showError]);
 
   const adopt = useCallback((ack: Ack, name: string) => {
     if (!ack.ok || !ack.roomCode || !ack.playerId) {
@@ -224,8 +232,10 @@ export function useGame(): GameApi {
     endGame: () => guarded('host:end'),
     setTeamsEnabled: (enabled) => guarded('host:teams', { enabled }),
     setRoundSeconds: (seconds) => guarded('host:timer', { seconds }),
+    setRoundCount: (rounds) => guarded('host:rounds', { rounds }),
     setTeam: (teamId) => guarded('team:set', { teamId }),
     transferHost: (playerId) => guarded('host:transfer', { playerId }),
+    kickPlayer: (playerId) => guarded('host:kick', { playerId }),
     setPick: (letters) => ask('pick:set', { letters }),
     lockPick: () => guarded('pick:lock'),
     submitWord: (word) => ask('word:submit', { word }),

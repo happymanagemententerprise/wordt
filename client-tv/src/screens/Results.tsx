@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-import type { PublicPlayer, PublicRoomState, PublicTeam } from '@wordt/shared';
+import { formatRound, type PublicPlayer, type PublicRoomState, type PublicTeam } from '@wordt/shared';
 
 import { rankChanges } from '../scoreboard';
 import { Crown } from '../ui';
@@ -39,9 +39,7 @@ export function Results({ state, final }: { state: PublicRoomState; final: boole
       <section className="tv-stage">
         <header className="tv-head">
           <div>
-            <p className="tv-eyebrow">
-              Round {state.round} of {state.roundCount}
-            </p>
+            <p className="tv-eyebrow">{formatRound(state.round, state.roundCount)}</p>
             <h2>Final results</h2>
           </div>
         </header>
@@ -97,9 +95,7 @@ export function Results({ state, final }: { state: PublicRoomState; final: boole
     <section className="tv-stage">
       <header className="tv-head">
         <div>
-          <p className="tv-eyebrow">
-            Round {state.round} of {state.roundCount}
-          </p>
+          <p className="tv-eyebrow">{formatRound(state.round, state.roundCount)}</p>
           <h2>Round {state.round} results</h2>
         </div>
       </header>

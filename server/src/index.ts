@@ -386,6 +386,30 @@ io.on('connection', (socket: Socket) => {
     ack({ ok: true });
   });
 
+  on<{ rounds?: unknown }, ActionAck>(socket, 'host:rounds', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    const room = ctx.entry.room;
+    if (room.host?.id !== ctx.playerId) {
+      ack({ ok: false, error: 'Only the host can set the number of rounds.' });
+      return;
+    }
+    const raw = payload?.rounds;
+    const count = raw === null ? null : Number(raw);
+    if (count !== null && !Number.isInteger(count)) {
+      ack({ ok: false, error: 'That is not a valid number of rounds.' });
+      return;
+    }
+    if (!room.setRoundCount(ctx.playerId, count)) {
+      ack({ ok: false, error: 'Rounds can only be set in the lobby, to 3, 5, or unlimited.' });
+      return;
+    }
+    ack({ ok: true });
+  });
+
   on<Record<string, never>, ActionAck>(socket, 'host:next', (_payload, ack) => {
     const ctx = requirePlayer(socket);
     if (!ctx.ok) {
@@ -462,6 +486,45 @@ io.on('connection', (socket: Socket) => {
       ack({ ok: false, error: 'That player has disconnected.' });
       return;
     }
+    ack({ ok: true });
+  });
+
+  on<{ playerId?: unknown }, ActionAck>(socket, 'host:kick', (payload, ack) => {
+    const ctx = requirePlayer(socket);
+    if (!ctx.ok) {
+      ack(ctx);
+      return;
+    }
+    const room = ctx.entry.room;
+    if (room.host?.id !== ctx.playerId) {
+      ack({ ok: false, error: 'Only the host can remove a player.' });
+      return;
+    }
+    const targetId = typeof payload?.playerId === 'string' ? payload.playerId : '';
+    if (!targetId) {
+      ack({ ok: false, error: 'Pick a player to remove.' });
+      return;
+    }
+    if (targetId === ctx.playerId) {
+      ack({ ok: false, error: 'You cannot remove yourself — use Leave room.' });
+      return;
+    }
+    const target = room.players.get(targetId);
+    if (!target) {
+      ack({ ok: false, error: 'That player is not in this room.' });
+      return;
+    }
+
+    // Tell the player, detach their socket, then free the seat for good.
+    const targetSocket = target.socketId;
+    if (targetSocket) {
+      io.to(targetSocket).emit('room:removed', { roomCode: room.code });
+      io.sockets.sockets.get(targetSocket)?.leave(room.code);
+      sessions.delete(targetSocket);
+    }
+    room.removePlayer(targetId);
+    maybeCleanup(room.code, ctx.entry);
+    console.log(`[wordt] ${target.name} was removed from room ${room.code}`);
     ack({ ok: true });
   });
 

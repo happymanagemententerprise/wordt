@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 
-import type { PublicRoomState } from '@wordt/shared';
+import { formatRound, type PublicRoomState } from '@wordt/shared';
 
 import { useTv } from './game';
 import { Lobby } from './screens/Lobby';
@@ -68,7 +68,7 @@ export default function App(): ReactNode {
         <span className="tv-brand">Wordt</span>
         <span className="tv-topbar__code">{state.roomCode}</span>
         <span className="tv-pill">
-          Round {state.round}/{state.roundCount}
+          {formatRound(state.round, state.roundCount)}
         </span>
         <span className="tv-pill tv-pill--phase">{phaseLabel(state.phase)}</span>
       </header>

@@ -94,13 +94,14 @@ async function main(): Promise<void> {
 
     await ann.page.getByRole('button', { name: 'How to play' }).click();
     await ann.page.getByRole('heading', { name: 'How to play' }).waitFor({ state: 'visible' });
-    const phoneRules = await ann.page.locator('.rules__num').count();
-    assert(phoneRules === 8, `expected 8 phone rule sections, saw ${phoneRules}`);
+    const phoneSlides = await ann.page.locator('.slides__dot').count();
+    assert(phoneSlides === 7, `expected 7 phone how-to-play slides, saw ${phoneSlides}`);
     await ann.page.getByRole('button', { name: '← Back' }).click();
-    await ann.page.getByRole('button', { name: 'Create a room' }).waitFor({ state: 'visible' });
+    await ann.page.getByRole('button', { name: 'Create a room', exact: true }).waitFor({ state: 'visible' });
     console.log('the phone how-to-play page renders and backs out');
 
-    await ann.page.getByRole('button', { name: 'Create a room' }).click();
+    await ann.page.getByRole('button', { name: 'Create a room', exact: true }).click();
+    await ann.page.getByRole('button', { name: 'Create room', exact: true }).click();
     await ann.page.locator('.room-code').waitFor({ state: 'visible' });
     const code = (await ann.page.locator('.room-code').innerText()).replace(/\s+/g, '');
     assert(code.length === 5, `expected a five letter room code, got "${code}"`);

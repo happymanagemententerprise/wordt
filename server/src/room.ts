@@ -4,6 +4,7 @@ import type { Server } from 'socket.io';
 
 import {
   ALLOW_LETTER_REUSE_IN_WORD,
+  DEFAULT_ROUND_COUNT,
   LETTERS_PER_PLAYER_MORE,
   LETTERS_PER_PLAYER_TWO,
   LETTER_POOL,
@@ -11,7 +12,7 @@ import {
   MIN_WORD_LENGTH,
   PICK_PHASE_SECONDS,
   POOL_SIZE,
-  ROUNDS,
+  ROUND_COUNT_CHOICES,
   REVIEW_STEP_SECONDS,
   TEAM_SIZE,
   VALUE_REVEAL_SECONDS,
@@ -126,6 +127,8 @@ export class Room {
   teamsEnabled = false;
   /** Word-phase length the host chose in the lobby, before this game. */
   wordSeconds: number | null = null;
+  /** How many rounds the host chose, or null for unlimited. */
+  roundLimit: number | null = DEFAULT_ROUND_COUNT;
   readonly feed: FeedItem[] = [];
   /** Identifier for the current game session; null before a game starts. */
   gameId: string | null = null;
@@ -230,6 +233,20 @@ export class Room {
     if (next) next.isHost = true;
   }
 
+  /**
+   * Force a player out of the room (host kick). Frees the seat entirely, unlike
+   * a disconnect, so they are gone from the lobby and standings. The caller is
+   * responsible for detaching and notifying that player's socket.
+   */
+  removePlayer(playerId: PlayerId): boolean {
+    const player = this.players.get(playerId);
+    if (!player) return false;
+    this.players.delete(playerId);
+    if (player.isHost) this.promoteHost();
+    this.emitState();
+    return true;
+  }
+
   // --------------------------------------------------------------- controls
 
   /** Host-only. Requires at least two connected players. */
@@ -260,7 +277,7 @@ export class Room {
   startNextRound(playerId: PlayerId): boolean {
     if (this.phase !== 'RESULTS') return false;
     if (this.host?.id !== playerId) return false;
-    if (this.round >= ROUNDS) return false;
+    if (this.roundLimit !== null && this.round >= this.roundLimit) return false;
     this.beginRound();
     return true;
   }
@@ -408,6 +425,17 @@ export class Room {
     if (this.phase !== 'LOBBY') return false;
     if (this.host?.id !== playerId) return false;
     this.wordSeconds = seconds;
+    this.emitState();
+    this.emitOwn();
+    return true;
+  }
+
+  /** Host chooses how many rounds the game runs (3, 5, or null for unlimited). */
+  setRoundCount(playerId: PlayerId, count: number | null): boolean {
+    if (this.phase !== 'LOBBY') return false;
+    if (this.host?.id !== playerId) return false;
+    if (!ROUND_COUNT_CHOICES.includes(count as (typeof ROUND_COUNT_CHOICES)[number])) return false;
+    this.roundLimit = count;
     this.emitState();
     this.emitOwn();
     return true;
@@ -772,7 +800,7 @@ export class Room {
     this.reviewIndex += 1;
 
     if (this.reviewIndex >= this.reviewSteps.length) {
-      if (this.round >= ROUNDS) {
+      if (this.roundLimit !== null && this.round >= this.roundLimit) {
         this.clearTimer();
         this.phase = 'GAME_OVER';
         this.phaseEndsAt = null;
@@ -881,7 +909,7 @@ export class Room {
       roomCode: this.code,
       phase: this.phase,
       round: this.round,
-      roundCount: ROUNDS,
+      roundCount: this.roundLimit,
       phaseEndsAt: this.phaseEndsAt,
       players,
       hostId: this.host?.id ?? null,
@@ -975,15 +1003,18 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
     steps.push({ kind: 'rare_letter', reveal: result.rare });
   }
 
-  for (const unique of result.uniqueWords) {
-    steps.push({
-      kind: 'unique_word',
-      word: unique.word,
-      playerId: unique.playerId,
-      playerName: unique.playerName,
-      points: unique.points,
-      credit: unique.credit,
-    });
+  if (result.uniqueWords.length > 0) {
+    // One reveal for every unique word, grouped by the unit that found them.
+    const groups = new Map<string, { playerId: PlayerId; credit: string; words: { word: string; points: number }[] }>();
+    for (const unique of result.uniqueWords) {
+      let group = groups.get(unique.playerId);
+      if (!group) {
+        group = { playerId: unique.playerId, credit: unique.credit, words: [] };
+        groups.set(unique.playerId, group);
+      }
+      group.words.push({ word: unique.word, points: unique.points });
+    }
+    steps.push({ kind: 'unique_words', groups: [...groups.values()] });
   }
 
   if (result.mostUsedWords.length > 0) {
