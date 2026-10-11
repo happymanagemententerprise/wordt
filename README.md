@@ -326,6 +326,59 @@ which Render captures) if you need the log to survive.
 
 ---
 
+## Analytics pipeline
+
+`analytics/` is a small Python package that pulls those events back out of Render
+and writes them into a Google Sheet. It is run every 15 minutes by
+[`.github/workflows/analytics.yml`](.github/workflows/analytics.yml) (and can be
+triggered by hand from the Actions tab).
+
+It reads the service's logs through Render's [List logs API](https://api-docs.render.com/reference/list-logs),
+keeps only the game's JSON event lines, and appends the new ones to an **Events**
+tab. Events are de-duplicated by a content hash, so re-querying an overlapping
+window never double-counts. The summary tabs are then rebuilt from the full stored
+event set each run, which keeps them consistent and makes a re-run a no-op.
+
+| Tab          | what it holds |
+| ------------ | ------------- |
+| `Events`     | one row per event: `event_id`, `timestamp`, `gameId`, `roomCode`, `round`, `type`, `playerId`, and the rest as JSON `details` |
+| `Games`      | one row per game: room, start/end, player count, team mode, rounds, winners, final standings, total valid words |
+| `Words`      | each submitted word: submissions, valid/invalid counts, total and average points |
+| `Letters`    | per letter: times in the pool, times picked, times used in valid words, points earned |
+| `Rejections` | invalid submissions by `reason`, with how many were wrong tries |
+| `Meta`       | the resume cursor (`lastProcessedTimestamp`), last run time and event count |
+
+A run resumes from the stored cursor with a small overlap (Render pagination can
+re-serve boundary logs); de-duplication makes the overlap harmless. `--dry-run`
+reads the real sheet and prints the tables it *would* write, without writing.
+
+```bash
+cd analytics
+python -m pip install -e ".[dev]"
+python -m wordt_analytics --dry-run --events-file ../server/logs/events.jsonl  # offline
+python -m wordt_analytics --dry-run                                            # against Render
+python -m pytest
+```
+
+Without `--events-file` it calls the Render API; without `--dry-run` it writes to
+the sheet. Other flags: `--window-hours` (first-run lookback), `--start`/`--end`
+(an explicit window), `--sheet-id`.
+
+The workflow expects these repository **secrets**:
+
+| Secret | what it is |
+| ------ | ---------- |
+| `RENDER_API_KEY` | a Render API key with read access |
+| `RENDER_SERVICE_ID` | the `srv_…` id of the Wordt web service |
+| `RENDER_OWNER_ID` | the Render workspace/owner id |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | the service account key JSON, as a single string |
+| `GOOGLE_SHEET_ID` | optional; falls back to the project's default sheet |
+
+Share the spreadsheet with the service account's `client_email` and give it
+**Editor** access. The service account only ever sees this one sheet.
+
+---
+
 ## Testing
 
 ```bash

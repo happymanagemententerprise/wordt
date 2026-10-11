@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wordt-analytics"
+version = "0.1.0"
+description = "Sync Wordt's analytics events from Render logs into a Google Sheet."
+requires-python = ">=3.11"
+dependencies = [
+  "gspread>=6.0,<7",
+  "google-auth>=2.30",
+  "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+wordt-analytics = "wordt_analytics.cli:main"
+
+[tool.setuptools]
+packages = ["wordt_analytics"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
