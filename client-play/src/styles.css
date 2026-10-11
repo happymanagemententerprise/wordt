@@ -1165,36 +1165,277 @@ h2 {
   position: relative;
 }
 
-.champion {
+/* Full-width row that hosts the first-place celebration. */
+.standing__celebrate {
+  grid-column: 1 / -1;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-  padding: 1rem;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  background: linear-gradient(160deg, rgba(255, 87, 34, 0.18), rgba(255, 235, 59, 0.06));
-  animation: pop-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  justify-content: center;
+  margin-bottom: 0.35rem;
 }
 
-.champion__label {
-  margin: 0;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.72rem;
-  font-weight: 700;
+/* --- winner figure ------------------------------------------------------- */
+
+.winner-figure {
+  display: block;
+  width: clamp(84px, 26vw, 118px);
+  height: auto;
+  overflow: visible;
 }
 
-.champion__name {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 800;
+.winner-figure--intro {
+  transform-box: view-box;
+  transform-origin: 75px 150px;
+  animation: figure-pop 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.champion__score {
-  margin: 0;
-  color: var(--muted);
+.winner-figure__shadow {
+  fill: rgba(0, 0, 0, 0.45);
+}
+
+.winner-figure__leg {
+  fill: #e64a19;
+}
+
+.winner-figure__shoe {
+  fill: #673ab7;
+}
+
+.winner-figure__body {
+  fill: #ff5722;
+}
+
+.winner-figure__arm {
+  fill: none;
+  stroke: #ff5722;
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+
+.winner-figure__head circle,
+.winner-figure__head rect {
+  fill: #ffc9a3;
+}
+
+.winner-figure__hair {
+  fill: #673ab7;
+}
+
+.winner-figure__medal-disc {
+  fill: #ffeb3b;
+}
+
+.winner-figure__medal-star {
+  fill: #e6a900;
+}
+
+.winner-figure__medal-gloss {
+  fill: none;
+  stroke: #fff7c4;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.winner-figure__ribbon {
+  fill: none;
+  stroke: #673ab7;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.winner-figure__cup-metal {
+  fill: #ffeb3b;
+}
+
+.winner-figure__cup-gloss {
+  fill: #fff7c4;
+  opacity: 0.85;
+}
+
+.winner-figure__cup-handle {
+  fill: none;
+  stroke: #e0b500;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.winner-figure__sparkle {
+  fill: #fff7c4;
+}
+
+.winner-figure__medal {
+  transform-box: view-box;
+  transform-origin: 104px 60px;
+}
+
+.winner-figure__cup {
+  transform-box: view-box;
+  transform-origin: 30px 44px;
+}
+
+.winner-figure__idle {
+  transform-box: view-box;
+  transform-origin: 75px 150px;
+}
+
+.winner-figure--intro .winner-figure__idle {
+  animation: figure-bob 2.8s ease-in-out 1.5s infinite;
+}
+
+.winner-figure--intro .winner-figure__cup {
+  animation:
+    cup-lift 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both,
+    cup-idle 2.6s ease-in-out 1.5s infinite;
+}
+
+.winner-figure--intro .winner-figure__medal {
+  animation: medal-swing 0.85s cubic-bezier(0.34, 1.4, 0.5, 1) 0.35s both;
+}
+
+.winner-figure--intro .winner-figure__sparkle {
+  animation: sparkle-pop 0.5s ease 0.95s both, sparkle-twinkle 1.8s ease-in-out 1.45s infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.winner-figure--static .winner-figure__cup,
+.winner-figure--static .winner-figure__medal,
+.winner-figure--static .winner-figure__idle,
+.winner-figure--static .winner-figure__sparkle {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+/* A quiet silver or bronze medal beside the runner-up names. */
+.standing-medal {
+  width: 1rem;
+  height: 1.35rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.28rem;
+}
+
+.standing-medal__ribbon {
+  fill: none;
+  stroke: #673ab7;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.standing-medal__gloss {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.standing-medal__ring {
+  stroke-width: 1.6;
+}
+
+.standing-medal--pop {
+  animation: medal-pop-in 0.4s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.standing-medal--static {
+  animation: none;
+}
+
+.standing__celebrate .winner-figure {
+  display: block;
+}
+
+@keyframes figure-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes figure-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes medal-swing {
+  0% {
+    opacity: 0;
+    transform: rotate(-42deg);
+  }
+  70% {
+    opacity: 1;
+    transform: rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes cup-lift {
+  0% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.82);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cup-idle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-3deg);
+  }
+}
+
+@keyframes sparkle-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes medal-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .confetti {

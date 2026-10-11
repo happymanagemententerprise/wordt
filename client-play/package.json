@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "e2e": "tsx scripts/e2e.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -17,11 +18,15 @@
     "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.2",
     "playwright-core": "^1.63.0",
     "typescript": "^5.7.3",
-    "vite": "^8.3.3"
+    "vite": "^8.3.3",
+    "vitest": "^3.2.7"
   }
 }

@@ -1,7 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react';
 
+import { finalRanks, medalForRank } from '../finalRanks';
+import { Medal, WinnerFigure } from '../FinalCelebration';
 import type { GameApi } from '../game';
-import { Standings } from '../ui';
+import { Standings, type StandingDecoration } from '../ui';
 
 const CONFETTI_COLORS = ['#ff8a3d', '#ffd166', '#4dd0a0', '#5aa9ff', '#c792ea'];
 
@@ -36,20 +38,20 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
   const teamPlay = state.teamsEnabled && Boolean(own.teamId);
   const unitId = teamPlay ? (own.teamId as string) : own.id;
   const mine = state.lastRoundResult?.players.find((unit) => unit.id === unitId);
-  const champion = final ? (standings[0] ?? null) : null;
+  const ranks = final ? finalRanks(standings) : undefined;
+
+  const decorate = final
+    ? (_player: (typeof standings)[number], rank: number): StandingDecoration | null => {
+        if (rank === 1) return { block: <WinnerFigure /> };
+        const medal = medalForRank(rank);
+        return medal && medal !== 'gold' ? { medal: <Medal kind={medal} /> } : null;
+      }
+    : undefined;
 
   return (
     <section className={`screen${final ? ' screen--final' : ''}`}>
       {final ? <Confetti /> : null}
       <h2>{final ? 'Final results' : `Round ${state.round} results`}</h2>
-
-      {champion ? (
-        <div className="champion">
-          <p className="champion__label">Champion</p>
-          <p className="champion__name">{champion.name}</p>
-          <p className="champion__score">{champion.score} points</p>
-        </div>
-      ) : null}
 
       {mine ? (
         <p className="myround">
@@ -62,7 +64,7 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
         </p>
       ) : null}
 
-      <Standings players={standings} activeId={unitId} showStats={final} />
+      <Standings players={standings} activeId={unitId} showStats={final} ranks={ranks} decorate={decorate} />
 
       <div className="actions">
         {!own.isHost ? (

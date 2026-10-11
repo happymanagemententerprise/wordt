@@ -65,29 +65,47 @@ export function phaseLabel(phase: string): string {
   }
 }
 
+export interface StandingDecoration {
+  /** Rendered full-width above the row — the first-place celebration lives here. */
+  block?: ReactNode;
+  /** Rendered inline just before the name — the silver/bronze medal lives here. */
+  medal?: ReactNode;
+}
+
 export function Standings({
   players,
   activeId,
   showStats = false,
   onMakeHost,
   onKick,
+  ranks,
+  decorate,
 }: {
   players: PublicPlayer[];
   activeId?: string;
   showStats?: boolean;
   onMakeHost?: (playerId: string) => void;
   onKick?: (playerId: string) => void;
+  /** Finishing position per row; falls back to list order (1, 2, 3, …). */
+  ranks?: number[];
+  /** Extra ornament per row, keyed off its finishing position. */
+  decorate?: (player: PublicPlayer, rank: number) => StandingDecoration | null;
 }): ReactNode {
   return (
     <ol className="standings">
-      {players.map((player, index) => (
+      {players.map((player, index) => {
+        const rank = ranks?.[index] ?? index + 1;
+        const decoration = decorate ? decorate(player, rank) : null;
+        return (
         <li
           key={player.id}
           style={{ '--i': index } as CSSProperties}
           className={`standing${player.id === activeId ? ' standing--you' : ''}${player.connected ? '' : ' standing--away'}`}
         >
-          <span className="standing__rank">{index + 1}</span>
+          {decoration?.block ? <span className="standing__celebrate">{decoration.block}</span> : null}
+          <span className="standing__rank">{rank}</span>
           <span className="standing__name">
+            {decoration?.medal ? decoration.medal : null}
             {player.name}
             {player.isHost ? <span className="tag tag--host">host</span> : null}
             {player.teamId && player.teamId !== player.id ? (
@@ -126,7 +144,8 @@ export function Standings({
           ) : null}
           <span className="standing__score">{player.score}</span>
         </li>
-      ))}
+        );
+      })}
     </ol>
   );
 }
