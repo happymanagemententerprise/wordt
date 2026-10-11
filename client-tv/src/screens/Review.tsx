@@ -97,29 +97,6 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
         </div>
       );
     }
-    case 'missed_words': {
-      const columns = [step.words.slice(0, 5), step.words.slice(5, 10)];
-      return (
-        <div className="tv-reveal tv-reveal--missed">
-          <p className="tv-eyebrow">Words you missed</p>
-          <p className="tv-reveal__sub">
-            the {step.words.length} best words the pool could make, nobody found them
-          </p>
-          <div className="tv-missed">
-            {columns.map((column, index) => (
-              <ul key={index} className="tv-missed__col">
-                {column.map((missed, row) => (
-                  <li key={missed.word} className="tv-missed__row" style={{ '--i': index * 5 + row } as CSSProperties}>
-                    <span className="tv-missed__word">{missed.word}</span>
-                    <span className="tv-missed__points">+{missed.points}</span>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
-      );
-    }
     case 'spotlight':
       return (
         <div className="tv-reveal tv-reveal--spotlight">
@@ -128,11 +105,24 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
           <ul className="tv-spotlight">
             {step.words.map((missed, index) => (
               <li key={missed.word} className="tv-spotlight__row" style={{ '--i': index } as CSSProperties}>
-                <span className="tv-spotlight__word">{missed.word}</span>
-                <span className="tv-spotlight__points">+{missed.points}</span>
+                <div className="tv-spotlight__head">
+                  <span className="tv-spotlight__word">{missed.word}</span>
+                  <span className="tv-spotlight__points">+{missed.points}</span>
+                </div>
+                {missed.meaning ? (
+                  <p className="tv-spotlight__meaning" style={{ '--i': index } as CSSProperties}>
+                    {missed.meaning.partOfSpeech ? (
+                      <em className="tv-spotlight__pos">{missed.meaning.partOfSpeech}</em>
+                    ) : null}
+                    {missed.meaning.definition}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
+          <p className="tv-spotlight__credit">
+            Definitions from Wiktionary via FreeDictionaryAPI.com (CC BY-SA 4.0)
+          </p>
         </div>
       );
     case 'leaderboard':

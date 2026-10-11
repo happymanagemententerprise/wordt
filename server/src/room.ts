@@ -36,6 +36,7 @@ import type {
   FeedItem,
   Letter,
   LetterValueTable,
+  MissedWord,
   OwnState,
   Phase,
   PlayerId,
@@ -52,6 +53,7 @@ import type {
   WordRejection,
 } from '@wordt/shared';
 import { logEvent } from './analytics';
+import { getDefinitions } from './definitions';
 
 const DICTIONARY = loadDictionary();
 
@@ -698,11 +700,13 @@ export class Room {
       rareLetter: this.rareLetter,
     });
 
-    // Words the final pool could have made that nobody actually submitted.
+    // The best words the final pool could have made that nobody actually
+    // submitted. These are the five spotlight words, in ranked order.
+    let spotlight: MissedWord[] = [];
     if (this.letterValues && this.letterValues.entries.length > 0) {
       const pool = new Set(this.letterValues.entries.map((entry) => entry.letter));
       const submitted = new Set(inputs.flatMap((input) => input.validWords));
-      result.missedWords = computeMissedWords(DICTIONARY, pool, table.values, submitted);
+      spotlight = computeMissedWords(DICTIONARY, pool, table.values, submitted);
     }
     this.lastRoundResult = result;
 
@@ -720,11 +724,41 @@ export class Room {
 
     this.log('round_scored', this.roundScoredData(result));
 
-    this.reviewSteps = buildReviewSteps(result);
+    this.reviewSteps = buildReviewSteps(result, spotlight);
     this.reviewIndex = 0;
+
+    // Fire the dictionary lookups now so the meanings are usually ready by the
+    // time the spotlight step is reached. They never block the reveal.
+    if (spotlight.length > 0) this.loadMeanings(spotlight);
+
     this.setPhase('REVIEW', REVIEW_SECONDS, () => this.stepReview());
     this.emitState();
     this.emitOwn();
+  }
+
+  /**
+   * Attaches definitions to the spotlight words once the dictionary answers.
+   * The lookup is best-effort: whatever is back when the step is shown is what
+   * players see, and anything still in flight is simply left out.
+   */
+  private loadMeanings(words: MissedWord[]): void {
+    const round = this.round;
+    void getDefinitions(words.map((word) => word.word))
+      .then((definitions) => {
+        if (this.destroyed) return;
+        let changed = false;
+        for (const word of words) {
+          const meaning = definitions[word.word.toUpperCase()];
+          if (meaning) {
+            word.meaning = meaning;
+            changed = true;
+          }
+        }
+        if (changed && this.phase === 'REVIEW' && this.round === round) this.emitState();
+      })
+      .catch(() => {
+        /* getDefinitions is best-effort and never rejects, but be safe. */
+      });
   }
 
   /** Per-unit scores plus the round's highlights, for the analytics log. */
@@ -996,7 +1030,7 @@ export class Room {
   }
 }
 
-function buildReviewSteps(result: RoundResult): ReviewStep[] {
+function buildReviewSteps(result: RoundResult, spotlight: MissedWord[]): ReviewStep[] {
   const steps: ReviewStep[] = [];
 
   if (result.rare) {
@@ -1029,10 +1063,9 @@ function buildReviewSteps(result: RoundResult): ReviewStep[] {
     steps.push({ kind: 'draft_penalty', entries: result.draftPenalties });
   }
 
-  if (result.missedWords && result.missedWords.length > 0) {
-    steps.push({ kind: 'missed_words', words: result.missedWords });
-    // The top of the missed list gets its own spotlight beat before the board.
-    steps.push({ kind: 'spotlight', words: result.missedWords.slice(0, 5) });
+  if (spotlight.length > 0) {
+    // The best unclaimed words, right before the standings so they stick.
+    steps.push({ kind: 'spotlight', words: spotlight });
   }
 
   steps.push({ kind: 'leaderboard' });

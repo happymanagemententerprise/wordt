@@ -922,6 +922,56 @@ h2 {
   width: 100%;
 }
 
+.spotlight {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spotlight__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(245, 239, 227, 0.2);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.spotlight__word {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  word-break: break-word;
+}
+
+.spotlight__points {
+  color: var(--tap);
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.spotlight__meaning {
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.spotlight__pos {
+  color: var(--muted);
+  font-style: italic;
+  margin-right: 0.35rem;
+}
+
 .myround {
   margin: 0;
   padding: 0.7rem 0.85rem;

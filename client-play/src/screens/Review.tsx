@@ -81,20 +81,27 @@ export function Review({ game }: { game: GameApi }): ReactNode {
               {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
             </p>
           </>
-        ) : step.kind === 'missed_words' ? (
-          <>
-            <p className="eyebrow">Words you missed</p>
-            <p className="reveal__word">
-              {step.words.map((missed) => `${missed.word} +${missed.points}`).join(' · ')}
-            </p>
-            <p className="reveal__who">formable from the pool — nobody found them</p>
-          </>
         ) : step.kind === 'spotlight' ? (
           <>
             <p className="eyebrow">Spotlight</p>
-            <p className="reveal__word">
-              {step.words.map((missed) => `${missed.word} +${missed.points}`).join(' · ')}
-            </p>
+            <ul className="spotlight">
+              {step.words.map((missed) => (
+                <li key={missed.word} className="spotlight__row">
+                  <span className="spotlight__word">
+                    {missed.word}
+                    <span className="spotlight__points">+{missed.points}</span>
+                  </span>
+                  {missed.meaning ? (
+                    <span className="spotlight__meaning">
+                      {missed.meaning.partOfSpeech ? (
+                        <em className="spotlight__pos">{missed.meaning.partOfSpeech}</em>
+                      ) : null}
+                      {missed.meaning.definition}
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
             <p className="reveal__who">the five biggest words nobody made</p>
           </>
         ) : (

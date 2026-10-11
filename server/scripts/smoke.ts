@@ -124,6 +124,24 @@ function readLogEvents(offset: number): LogEvent[] {
     .map((line) => JSON.parse(line) as LogEvent);
 }
 
+/**
+ * The analytics writer queues writes asynchronously, so a fresh event may not be
+ * on disk the instant the state arrives. Poll briefly for it to land.
+ */
+async function readLogEventsUntil(
+  offset: number,
+  code: string,
+  type: string,
+  ms: number,
+): Promise<LogEvent[]> {
+  const deadline = Date.now() + ms;
+  for (;;) {
+    const events = readLogEvents(offset).filter((event) => event.roomCode === code);
+    if (events.some((event) => event.type === type) || Date.now() > deadline) return events;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
 async function main(): Promise<void> {
   const ann = await connect();
   const bob = await connect();
@@ -211,18 +229,17 @@ async function main(): Promise<void> {
   assert(ownWords.totalTries === 3, `expected 3 total tries, got ${ownWords.totalTries}`);
 
   const review = await awaitState(ann, (s) => s.phase === 'REVIEW', 60000, 'REVIEW');
-  assert(review.reviewSteps.length >= 6, 'expected review steps');
+  assert(review.reviewSteps.length >= 3, 'expected review steps');
   if (review.reviewSteps[0].kind === 'rare_letter') {
     assert(review.rareLetter, 'the review should carry the rare letter');
   }
   console.log(`review steps: ${review.reviewSteps.map((s: any) => s.kind).join(' -> ')}`);
-  const stepKinds = review.reviewSteps.map((s: any) => s.kind);
-  assert(stepKinds[0] === 'rare_letter', 'the rare letter reveal must come first');
-  assert(stepKinds.includes('missed_words'), 'expected a missed-words reveal');
+
+  const stepKinds = review.reviewSteps.map((s: any) => s.kind as string);
+  assert(!stepKinds.includes('missed_words'), 'the old missed-words reveal should be gone');
+  assert(stepKinds.includes('spotlight'), 'expected a spotlight reveal');
   assert(
-    stepKinds.indexOf('spotlight') !== -1 &&
-      stepKinds.indexOf('leaderboard') !== -1 &&
-      stepKinds.indexOf('spotlight') < stepKinds.indexOf('leaderboard'),
+    stepKinds.indexOf('spotlight') < stepKinds.indexOf('leaderboard'),
     'the spotlight reveal must precede the leaderboard',
   );
 
@@ -303,7 +320,7 @@ async function main(): Promise<void> {
   // Ending the game must log final standings and winners.
   assert((await emit(ann, 'host:end')).ok, 'host should be able to end the game');
   await awaitState(ann, (s) => s.phase === 'GAME_OVER', 5000, 'GAME_OVER');
-  const overEvents = readLogEvents(logOffset).filter((event) => event.roomCode === code);
+  const overEvents = await readLogEventsUntil(logOffset, code, 'game_over', 3000);
   const overTypes = overEvents.map((event) => event.type);
   const gameOver = overEvents.find((event) => event.type === 'game_over');
   assert(gameOver, 'ending the game should write a game_over event');

@@ -216,9 +216,6 @@ export function scoreRound(
     mostUsedWords,
     statAwards: awardTracker.completed(),
     draftPenalties,
-    // Filled in by the server, which owns the dictionary. Kept as a field here
-    // so the review step builder has one shape to read.
-    missedWords: undefined,
     ...(rare ? { rare } : {}),
   };
 }

@@ -76,11 +76,11 @@ measured against.
 
 **4. Review.** The round is scored on the server and the results are revealed one
 step at a time on the TV: the rare letter (when one was drawn), unique words,
-the most-used word, the stat bonuses, any draft penalties, then a **"words you
-missed"** step listing the highest-scoring words the pool could have made that
-nobody submitted, a **spotlight** on the very best of those, and finally the
-standings. While games run, the TV also shows a live feed of every accepted word
-and a progress bar for each player's letter pick.
+the most-used word, the stat bonuses, any draft penalties, then a **spotlight**
+on the five highest-scoring words the pool could have made that nobody
+submitted — each with its part of speech and a short dictionary definition — and
+finally the standings. While games run, the TV also shows a live feed of every
+accepted word and a progress bar for each player's letter pick.
 
 The TV plays like a game show: pool letters sit on bright contrasting tiles, a
 semi-transparent clock counts the phase down in the corner, the standings crown
@@ -282,6 +282,8 @@ game has picked one:
 | `WORDT_REVIEW_STEP_SECONDS` | 6       | each step of the round review        |
 | `WORDT_LOG_FILE`            | `logs/events.jsonl` | where the analytics log is appended (relative to the server's working directory) |
 | `WORDT_LOG_STDOUT`          | `true`  | also mirror every event line to stdout; set `0`/`false`/`no`/`off` to silence |
+| `WORDT_DEFINITIONS_API`     | `https://freedictionaryapi.com/api/v1/entries/en` | base URL for the spotlight's word lookups |
+| `WORDT_DEFINITIONS_CACHE`   | `data/definitions-cache.json` | where looked-up definitions are cached; set `0`/`false`/`no`/`off` to keep it in memory only |
 | `VITE_SERVER_URL`           | `http://localhost:3000` | where clients connect |
 | `VITE_PLAY_URL`             | `http://localhost:5173` | phone URL the TV's QR encodes |
 
@@ -334,9 +336,10 @@ npm run e2e  --workspace @wordt/client-play
 ```
 
 The **unit tests** cover letter values, the letter pool, missed-word finding,
-round scoring, bonuses, penalties, standings, teams and the winner
-determination, plus the analytics logger (valid JSONL, and a failed write never
-throws).
+dictionary definitions for the spotlight (sense picking, truncation, caching and
+timeout handling), round scoring, bonuses, penalties, standings, teams and the
+winner determination, plus the analytics logger (valid JSONL, and a failed write
+never throws).
 
 The **smoke test** plays a full round through the real socket protocol: two
 players, one word phase, the review, and a second round with the score carried
@@ -390,11 +393,18 @@ Things the spec left open, and what this build does:
    join random computer-added letters nobody overlapped on. Pool/value building
    uses an injected RNG, so tests are deterministic; the server passes the
    default (`Math.random`).
-10. **"Words you missed"** — a top-10 review step listing the highest-scoring
-    words formable from the pool that no player submitted. Computed on the server
+10. **Spotlight** — a single review step featuring the five highest-scoring words
+    formable from the pool that no player submitted, right before the standings,
+    so the best find is the last thing players remember. Computed on the server
     by scanning the dictionary once per round; skipped when nothing qualifies.
-    The **spotlight** step then re-features the top 5 of that list right before
-    the standings, so the best find is the last thing players remember.
+    The server then looks up a short definition for each of those five words and
+    attaches it to the reveal, so the TV can show the word, its part of speech
+    and a one-line meaning. Definitions come from the English **Wiktionary** via
+    [FreeDictionaryAPI.com](https://freedictionaryapi.com) and are used under
+    [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), credited
+    on screen. Lookups are best-effort — capped at 2s per word, cached per
+    process, and simply omitted (word and points only) if the dictionary is
+    unreachable — so the review never waits on the network.
 11. **Round length is a host choice** (10–600s, suggested 30/60/90/120) made in
    the lobby before the game starts; the game cannot start without one. Picks
    the first game's length, reused for every round until the room is recreated.

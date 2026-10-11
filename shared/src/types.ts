@@ -148,10 +148,20 @@ export interface DraftPenaltyEntry {
   points: number;
 }
 
+/** A short definition for a spotlight word, fetched on the server. */
+export interface WordMeaning {
+  /** Part of speech, e.g. "noun" or "verb". */
+  partOfSpeech: string;
+  /** A trimmed definition, cut to a readable length. */
+  definition: string;
+}
+
 /** A word nobody submitted that the pool could have made, for the reveal. */
 export interface MissedWord {
   word: string;
   points: number;
+  /** Short definition, present only when the dictionary API returned one. */
+  meaning?: WordMeaning;
 }
 
 /** The round's rare letter and how the find was settled, for the first reveal. */
@@ -178,8 +188,6 @@ export interface RoundResult {
   statAwards: StatAward[];
   /** Only the units that actually lost points to the draft penalty. */
   draftPenalties: DraftPenaltyEntry[];
-  /** Best words formable from the pool that nobody submitted; server-filled. */
-  missedWords?: MissedWord[];
   /** The rare letter round data; server-filled when the round drew one. */
   rare?: RareLetterReveal;
 }
@@ -210,7 +218,6 @@ export type ReviewStep =
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }
   | { kind: 'draft_penalty'; entries: DraftPenaltyEntry[] }
-  | { kind: 'missed_words'; words: MissedWord[] }
   | { kind: 'spotlight'; words: MissedWord[] }
   | { kind: 'leaderboard' };
 

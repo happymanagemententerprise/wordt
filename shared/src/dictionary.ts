@@ -9,6 +9,7 @@ import { validateWord } from './validate';
 import type {
   Letter,
   LetterValueTable,
+  MissedWord,
   ValidationResult,
   WordCheckContext,
 } from './types';
@@ -65,14 +66,8 @@ export function checkWordAttempt(
   return { result, word, score };
 }
 
-/** A word that was formable from the round's pool but that nobody submitted. */
-export interface MissedWord {
-  word: string;
-  points: number;
-}
-
-/** How many missed words the end-of-round reveal shows. */
-export const MISSED_WORDS_COUNT = 10;
+/** How many words the end-of-round spotlight shows. */
+export const SPOTLIGHT_WORDS_COUNT = 5;
 
 /**
  * Finds the best words the pool could have made that no player submitted.
@@ -84,7 +79,7 @@ export function computeMissedWords(
   pool: ReadonlySet<Letter>,
   letterValues: Readonly<Record<Letter, number>>,
   submitted: ReadonlySet<string>,
-  count = MISSED_WORDS_COUNT,
+  count = SPOTLIGHT_WORDS_COUNT,
 ): MissedWord[] {
   const scores: MissedWord[] = [];
   for (const word of dictionary) {
