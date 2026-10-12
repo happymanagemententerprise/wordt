@@ -1,4 +1,4 @@
-# Wordt Created by Happy Management
+# Wordt Created by Happy Management 
 
 A multiplayer party word game. Players pick letters together, the letters everyone
 picked become the shared pool, and then everyone races to make the best words.
