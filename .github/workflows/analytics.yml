@@ -48,6 +48,10 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
         run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "RENDER_API_KEY is not set; skipping (the Analytics sync is not configured)."
+            exit 0
+          fi
           python -m wordt_analytics \
             --window-hours "${{ github.event.inputs.window_hours || '24' }}" \
             ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}

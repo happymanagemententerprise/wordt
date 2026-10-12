@@ -377,6 +377,17 @@ The workflow expects these repository **secrets**:
 Share the spreadsheet with the service account's `client_email` and give it
 **Editor** access. The service account only ever sees this one sheet.
 
+### No Google Cloud? Use the Apps Script version
+
+If you would rather not set up a Cloud project / service account (it needs no
+billing, but can still be fiddly), [`analytics/apps-script/Code.gs`](analytics/apps-script/Code.gs)
+does the same job entirely inside your Google account. Open the sheet's
+**Extensions → Apps Script**, paste the file, and use the **Wordt Analytics**
+menu it adds: *Configure* (paste the Render API key, service id and owner id),
+*Dry run* to test, then *Create 15-minute trigger*. It writes the same tabs and
+uses the same de-duplication and cursor logic. The Render key lives in the
+script's properties, never in the sheet.
+
 ---
 
 ## Testing
