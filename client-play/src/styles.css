@@ -1679,3 +1679,61 @@ h2 {
     transition-duration: 0.01ms !important;
   }
 }
+
+.consent {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  width: min(92vw, 680px);
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 14px);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.5);
+}
+
+.consent__text {
+  margin: 0;
+  flex: 1 1 20rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.consent__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.consent__btn {
+  padding: 0.55rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.consent__btn--primary {
+  border-color: transparent;
+  background: var(--tap);
+  color: var(--bg);
+}
+
+.consent__btn:hover {
+  filter: brightness(1.08);
+}
+
+.consent__btn:focus-visible {
+  outline: 2px solid var(--tap);
+  outline-offset: 2px;
+}

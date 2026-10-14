@@ -19,6 +19,19 @@ export { validateWord, normalizeWord, defaultWordContext } from './validate';
 export { HOW_TO_PLAY, type RulesSection } from './rules';
 export { teamName, mergeTeam, lettersPerTeamMember, teamIdsForPlayerCount, validTeamId } from './teams';
 export {
+  CONSENT_STORAGE_KEY,
+  getConsent,
+  hasConsent,
+  setConsent,
+  resetConsent,
+  subscribeConsent,
+  isConsentPending,
+  pendingConsentCount,
+  loadConsentedScript,
+  type ConsentDecision,
+  type ConsentedScript,
+} from './consent';
+export {
   scoreRound,
   sortStandings,
   determineWinners,

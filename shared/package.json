@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./consent": "./src/consent.ts",
     "./dictionary": "./src/dictionary.ts"
   },
   "scripts": {
