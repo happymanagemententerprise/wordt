@@ -1,0 +1,523 @@
+:root {
+  color-scheme: dark;
+  --bg: #272838;
+  --surface: #127475;
+  --surface-2: #127475;
+  --line: #b1e4e3;
+  --text: #e4ffe6;
+  --muted: #c7f2f1;
+  --accent: #e4ff1a;
+  --accent-ink: #272838;
+  --tap: #b1e4e3;
+  --tap-ink: #272838;
+  --tile: #e4ffe6;
+  --tile-ink: #272838;
+  --good: #e4ff1a;
+  --good-ink: #272838;
+  --bad: #b1e4e3;
+  --team-a: #e4ff1a;
+  --team-b: #b1e4e3;
+  --team-c: #e4ffe6;
+  --team-d: #c7f2f1;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+.brand,
+.room-code,
+.hero__title,
+.standing__rank,
+.standing__score {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 1.8rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--tap);
+  outline-offset: 3px;
+}
+
+::selection {
+  color: var(--tap-ink);
+  background: var(--tap);
+}
+
+input {
+  caret-color: var(--tap);
+}
+
+.app {
+  max-width: 38rem;
+  padding-right: max(1.1rem, env(safe-area-inset-right));
+  padding-left: max(1.1rem, env(safe-area-inset-left));
+}
+
+.topbar {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  padding-top: 0.85rem;
+}
+
+.brand {
+  color: var(--tap);
+  font-size: 1.35rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.topbar__code,
+.pill,
+.hint,
+.field__label,
+.standing__stats,
+.team-card__meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.pill {
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.pill--phase {
+  color: var(--accent);
+  background: rgba(228, 255, 26, 0.12);
+}
+
+.screen {
+  gap: 1.1rem;
+  padding-top: 1rem;
+  padding-bottom: 1.5rem;
+}
+
+.screen__head {
+  align-items: center;
+}
+
+.screen__head .hint,
+.hint {
+  line-height: 1.45;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.hint--error,
+.banner--error {
+  color: var(--bad);
+}
+
+.banner--error {
+  background: rgba(177, 228, 227, 0.13);
+  border: 1px solid rgba(177, 228, 227, 0.45);
+}
+
+.app--solo {
+  justify-content: center;
+  gap: 1rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+.hero {
+  margin: 0 0 0.4rem;
+}
+
+.hero__title {
+  color: var(--text);
+  font-size: clamp(3.3rem, 16vw, 5rem);
+  letter-spacing: 0.015em;
+  line-height: 0.86;
+  text-transform: uppercase;
+}
+
+.hero__tagline {
+  max-width: 28ch;
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.hero__byline {
+  margin: 0.22rem 0 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rules-link {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.35rem 0;
+  color: var(--tap);
+  font-weight: 700;
+  text-underline-offset: 0.2em;
+}
+
+.chooser {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+  padding: 0.28rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.chooser__tab {
+  min-height: 46px;
+  padding: 0.6rem 0.45rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.chooser__tab--on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stack {
+  gap: 0.9rem;
+}
+
+.field {
+  gap: 0.45rem;
+}
+
+.field__label {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.field__help {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.input {
+  min-height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.input:focus {
+  border-color: var(--tap);
+  box-shadow: 0 0 0 3px rgba(177, 228, 227, 0.2);
+}
+
+.input--code {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.input--word {
+  font-size: 1.1rem;
+}
+
+.btn {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.btn--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn--ready {
+  border-color: var(--good);
+  background: var(--good);
+  color: var(--good-ink);
+}
+
+.btn--ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--text);
+}
+
+.btn--danger {
+  border-color: rgba(177, 228, 227, 0.45);
+  color: var(--bad);
+}
+
+.subhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  color: var(--text);
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.subhead .count {
+  flex: 0 0 auto;
+  color: var(--tap);
+  font-family: 'Barlow', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.count,
+.standing__score,
+.scoreline,
+.wordlist__points,
+.countdown__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.room-code {
+  color: var(--accent);
+  font-size: clamp(2.6rem, 14vw, 3.5rem);
+  letter-spacing: 0.13em;
+  line-height: 0.95;
+}
+
+.standing,
+.team-card,
+.wordlist li,
+.scoreline,
+.rare,
+.composer {
+  border-color: var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.standing--you,
+.team-card--on {
+  border-color: var(--tap);
+  background: rgba(177, 228, 227, 0.12);
+}
+
+.standing__rank {
+  color: var(--muted);
+}
+
+.standing__score {
+  color: var(--tap);
+  font-size: 1.3rem;
+}
+
+.tag,
+.tag--host {
+  border-radius: 6px;
+  background: rgba(177, 228, 227, 0.16);
+  color: var(--tap);
+}
+
+.timer-choices {
+  gap: 0.5rem;
+}
+
+.chip-btn {
+  min-height: 42px;
+  border-color: var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.chip-btn--on {
+  border-color: var(--accent);
+  background: rgba(228, 255, 26, 0.12);
+  color: var(--accent);
+}
+
+.keyboard {
+  gap: 0.45rem;
+}
+
+.key {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.key--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 5px 16px rgba(228, 255, 26, 0.18);
+  transform: translateY(-1px);
+}
+
+.key--teammate {
+  background: rgba(177, 228, 227, 0.14);
+  color: var(--tap);
+}
+
+.tally strong,
+.scoreline__score,
+.rare__worth,
+.rare__letter {
+  color: var(--tap);
+  font-variant-numeric: tabular-nums;
+}
+
+.pick-progress {
+  margin-left: 0.45rem;
+  color: var(--muted);
+  font-size: 0.82em;
+}
+
+.locked {
+  color: var(--good);
+  font-weight: 700;
+}
+
+.countdown,
+.wordlist,
+.slides,
+.consent {
+  border-radius: 14px;
+}
+
+.countdown__value {
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+}
+
+.wordlist li {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.wordlist__points {
+  color: var(--tap);
+}
+
+.empty {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.consent {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.consent__btn--primary {
+  background: var(--tap);
+  color: var(--tap-ink);
+}
+
+.tv-team-text--A,
+.tv-team--A .tv-team-name,
+.team--A {
+  color: var(--team-a);
+}
+
+.tv-team-text--B,
+.tv-team--B .tv-team-name,
+.team--B {
+  color: var(--team-b);
+}
+
+.tv-team-text--C,
+.tv-team--C .tv-team-name,
+.team--C {
+  color: var(--team-c);
+}
+
+.tv-team-text--D,
+.tv-team--D .tv-team-name,
+.team--D {
+  color: var(--team-d);
+}
+
+@media (max-width: 360px) {
+  .app {
+    padding-right: max(0.8rem, env(safe-area-inset-right));
+    padding-left: max(0.8rem, env(safe-area-inset-left));
+  }
+
+  .key {
+    min-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

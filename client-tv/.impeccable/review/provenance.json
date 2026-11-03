@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-11-03T12:35:39.335Z",
+  "purpose": "Impeccable visual review capture; not a product asset.",
+  "origin": "Screenshot of the local Vite development render; no generated or sourced imagery.",
+  "captureTool": "Playwright Core using Microsoft Edge",
+  "route": "http://localhost:5174",
+  "reducedMotion": true,
+  "fullPage": true,
+  "files": [
+    {
+      "file": "desktop.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "source": "http://localhost:5174",
+      "capturedFrom": "Rendered application; screenshot only, not generated artwork."
+    },
+    {
+      "file": "mobile.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "source": "http://localhost:5174",
+      "capturedFrom": "Rendered application; screenshot only, not generated artwork."
+    }
+  ]
+}

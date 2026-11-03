@@ -11,11 +11,11 @@ export function Lobby({ state }: { state: PublicRoomState }): ReactNode {
   return (
     <section className="tv-stage tv-stage--lobby">
       <div className="tv-lobby__code">
-        <p className="tv-eyebrow">Grab your phone and join</p>
+        <h2>Grab your phone and join</h2>
         <p className="tv-code" aria-label={`Room code ${state.roomCode.split('').join(' ')}`}>
           {state.roomCode.split('').join(' ')}
         </p>
-        <QRCodeSVG value={joinUrl} size={168} bgColor="#0b0f1a" fgColor="#ffd166" level="M" />
+        <QRCodeSVG value={joinUrl} size={168} bgColor="#272838" fgColor="#E4FF1A" level="M" />
         <p className="tv-lobby__url">{joinUrl}</p>
       </div>
 
@@ -40,9 +40,9 @@ export function Lobby({ state }: { state: PublicRoomState }): ReactNode {
           </div>
         ) : (
           <>
-            <p className="tv-eyebrow">
+            <h2 className="tv-lobby__players-title">
               Players <span className="tv-count">{state.players.length}</span>
-            </p>
+            </h2>
             <ul className="tv-namelist">
               {state.players.map((player) => (
                 <li key={player.id} className={player.connected ? undefined : 'tv-namelist__away'}>

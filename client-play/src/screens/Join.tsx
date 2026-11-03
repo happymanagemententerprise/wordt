@@ -86,7 +86,8 @@ export function Join({ game }: { game: GameApi }): ReactNode {
   return (
     <div className="app app--solo">
       <div className="hero">
-        <h1 className="hero__title">Wordt by Happy Management</h1>
+        <h1 className="hero__title">Wordt</h1>
+        <p className="hero__byline">by Happy Management</p>
         <p className="hero__tagline">Pick letters together. Make the most words.</p>
       </div>
 
@@ -95,11 +96,10 @@ export function Join({ game }: { game: GameApi }): ReactNode {
       </button>
 
       {!lockedToJoin ? (
-        <div className="chooser" role="tablist" aria-label="Start a game">
+        <div className="chooser" role="group" aria-label="Choose how to start">
           <button
             type="button"
-            role="tab"
-            aria-selected={mode === 'join'}
+            aria-pressed={mode === 'join'}
             className={`chooser__tab${mode === 'join' ? ' chooser__tab--on' : ''}`}
             onClick={() => {
               setMode('join');
@@ -110,8 +110,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={mode === 'create'}
+            aria-pressed={mode === 'create'}
             className={`chooser__tab${mode === 'create' ? ' chooser__tab--on' : ''}`}
             onClick={() => {
               setMode('create');
@@ -136,10 +135,12 @@ export function Join({ game }: { game: GameApi }): ReactNode {
               }}
               placeholder="ABCDE"
               maxLength={5}
+              required
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
             />
+            <span className="field__help">Ask your host for the code on the TV.</span>
           </label>
           <label className="field">
             <span className="field__label">Your name</span>
@@ -152,6 +153,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
               }}
               placeholder="e.g. Sam"
               maxLength={16}
+              required
               autoComplete="nickname"
             />
           </label>
@@ -172,6 +174,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
               }}
               placeholder="e.g. Sam"
               maxLength={16}
+              required
               autoComplete="nickname"
             />
           </label>

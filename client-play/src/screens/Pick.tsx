@@ -84,8 +84,11 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
         <Countdown endsAt={state.phaseEndsAt} />
       </div>
 
-      <p className="tally">
+      <p className="tally" role="status" aria-live="polite">
         <strong>{selected.length}</strong> / {own.pickLimit} selected
+        <span className="pick-progress">
+          {selected.length === own.pickLimit ? 'All set — lock in' : `${own.pickLimit - selected.length} more to lock in`}
+        </span>
       </p>
 
       <div className={`keyboard${own.pickedLocked ? ' keyboard--locked' : ''}`}>
@@ -114,6 +117,7 @@ export function Pick({ game }: { game: GameApi }): ReactNode {
           <button
             className={`btn btn--primary${selected.length === own.pickLimit ? ' btn--ready' : ''}`}
             type="button"
+            disabled={game.busy || selected.length !== own.pickLimit}
             onClick={() => void game.lockPick()}
           >
             Lock in my letters

@@ -5,7 +5,7 @@ import { Medal, WinnerFigure } from '../FinalCelebration';
 import type { GameApi } from '../game';
 import { Standings, type StandingDecoration } from '../ui';
 
-const CONFETTI_COLORS = ['#ff8a3d', '#ffd166', '#4dd0a0', '#5aa9ff', '#c792ea'];
+const CONFETTI_COLORS = ['#E4FF1A', '#B1E4E3', '#E4FFE6', '#127475', '#5BC7C3'];
 
 function Confetti(): ReactNode {
   return (

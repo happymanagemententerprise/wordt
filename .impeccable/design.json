@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T00:00:00.000Z",
+  "title": "Design System: Wordt",
+  "components": [
+    {
+      "name": "Phone Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary phone action and ready state.",
+      "html": "<button class=\"btn btn--primary\">JOIN ROOM</button>",
+      "css": ".btn--primary, .btn--ready { background: #E4FF1A; color: #272838; } .btn:focus-visible { outline: 3px solid #B1E4E3; outline-offset: 3px; }"
+    },
+    {
+      "name": "TV Room Entry Action",
+      "kind": "button",
+      "description": "Large chartreuse room-entry action for the display client.",
+      "html": "<button class=\"tv-btn\">WATCH</button>",
+      "css": ".tv-btn { border: 1px solid #E4FF1A; border-radius: 14px; background: #E4FF1A; color: #272838; font-family: 'Barlow Condensed', Impact, sans-serif; font-weight: 700; }"
+    },
+    {
+      "name": "Room Code Input",
+      "kind": "input",
+      "description": "Labeled room-code entry with teal surface and visible focus.",
+      "html": "<label class=\"tv-entry__field\">ROOM CODE<input class=\"tv-entry__input\" placeholder=\"ABCDE\" /></label>",
+      "css": ".tv-entry__input { border: 1px solid #B1E4E3; border-radius: 14px; background: #127475; color: #E4FFE6; font-family: 'Barlow Condensed', Impact, sans-serif; } .tv-entry__input:focus-visible { outline: 3px solid #B1E4E3; }"
+    },
+    {
+      "name": "Selected Letter Key",
+      "kind": "custom",
+      "description": "Phone letter choice; chartreuse identifies the active selection.",
+      "html": "<button class=\"key key--on\">W</button>",
+      "css": ".key--on { border-color: #E4FF1A; background: #E4FF1A; color: #272838; }"
+    },
+    {
+      "name": "TV Phase Pill",
+      "kind": "chip",
+      "description": "Compact label for the current display phase.",
+      "html": "<span class=\"tv-pill tv-pill--phase\">PICKING</span>",
+      "css": ".tv-pill--phase { border-color: rgba(228,255,26,0.45); background: rgba(228,255,26,0.12); color: #E4FF1A; }"
+    },
+    {
+      "name": "TV Letter Tile",
+      "kind": "custom",
+      "description": "Mint letter tile with dark lettering and tactile depth.",
+      "html": "<span class=\"tv-value__letter\">W</span>",
+      "css": ".tv-value__letter { border-radius: 10px; background: #E4FFE6; color: #272838; box-shadow: 0 5px 14px rgba(0,0,0,0.26); font-family: 'Barlow Condensed', Impact, sans-serif; }"
+    }
+  ],
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Neon Chartreuse", "tonalRamp": ["#F8FFB8", "#F1FF8A", "#EBFF5C", "#E4FF1A", "#B7CC15", "#899910", "#5B660A", "#2E3305"] },
+      "secondary": { "role": "secondary", "displayName": "Icy Aqua", "tonalRamp": ["#E5F7F6", "#D8F2F1", "#C4EBE9", "#B1E4E3", "#8EB6B5", "#6B8988", "#485B5B", "#242E2E"] },
+      "tertiary": { "role": "tertiary", "displayName": "Frosted Mint", "tonalRamp": ["#F7FFF8", "#F1FFF3", "#EAFFED", "#E4FFE6", "#B6CCB8", "#89998A", "#5B665C", "#2E332E"] },
+      "stormy-teal": { "role": "neutral", "displayName": "Stormy Teal", "tonalRamp": ["#8CC7C8", "#60AAAB", "#379091", "#127475", "#0F5D5E", "#0B4647", "#082E2F", "#041718"] },
+      "shadow-grey": { "role": "neutral", "displayName": "Shadow Grey", "tonalRamp": ["#A4A4AC", "#85858F", "#676772", "#494953", "#272838", "#1F202C", "#171821", "#0C0C11"] },
+      "mint-text-tint": { "role": "derived", "displayName": "Mint Text Tint", "tonalRamp": ["#ECFBFA", "#DDF7F6", "#D2F5F3", "#C7F2F1", "#9FC2C1", "#779191", "#506161", "#283030"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Arcade Signage", "purpose": "Titles, room codes, scores, timers, and phase headings." },
+      "body": { "displayName": "Clear Play", "purpose": "Instructions, labels, controls, and supporting copy." }
+    },
+    "shadows": [
+      { "name": "stage-panel", "value": "0 10px 28px rgba(0,0,0,0.24)", "purpose": "Separate TV board, feed, and lobby panels from the dark ground." },
+      { "name": "letter-tile", "value": "0 5px 14px rgba(0,0,0,0.26)", "purpose": "Give TV mint letter tiles tactile separation." }
+    ],
+    "motion": [
+      { "name": "phone-control-feedback", "value": "140ms ease", "purpose": "Short phone button feedback; reduced motion minimizes transitions and animations." }
+    ],
+    "breakpoints": [
+      { "name": "phone-compact", "value": "360px" },
+      { "name": "tv-narrow", "value": "680px" },
+      { "name": "tv-entry-stack", "value": "900px" }
+    ]
+  },
+  "narrative": {
+    "northStar": "The Living-Room Arcade",
+    "overview": "Wordt is a living-room word tournament: the phone is the player's controller and the TV is the shared, display-only arena. Both clients share palette and Barlow typography while using distinct interaction scales. The five user-selected colors are neon chartreuse, icy aqua, frosted mint, stormy teal, and shadow grey. Mint text tint (#C7F2F1) is derived from icy aqua for supporting text on teal and is not an additional selected color.",
+    "keyCharacteristics": [
+      "Chartreuse marks primary actions, active selections, and meaningful game events.",
+      "Stormy teal groups game content; frosted mint carries text and letter tiles.",
+      "Barlow Condensed carries display moments; Barlow keeps controls and copy clear.",
+      "Phone controls remain reachable while TV information reads across the room."
+    ],
+    "rules": [
+      { "name": "The Signal Rule", "body": "Reserve chartreuse for the next action, active selection, or meaningful game event; do not use it as decoration that competes with game information.", "section": "colors" }
+    ],
+    "dos": [
+      "Do keep phone controls reachable and TV information legible at couch distance.",
+      "Do keep keyboard focus visible with an icy-aqua outline.",
+      "Do pair color with explicit state information and honor reduced-motion preferences."
+    ],
+    "donts": [
+      "Don't use chartreuse as body text on light surfaces.",
+      "Don't alter game rules, outcomes, room behavior, or server authority through visual styling.",
+      "Don't introduce extra palette colors, gradients, or glass effects that compete with game information."
+    ]
+  }
+}
+

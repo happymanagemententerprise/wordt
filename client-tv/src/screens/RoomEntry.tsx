@@ -19,19 +19,25 @@ export function RoomEntry({
 
   return (
     <div className="tv-solo">
-      <p className="tv-brand tv-brand--hero">Wordt by Happy Management</p>
+      <div className="tv-brand-lockup">
+        <h1 className="tv-brand tv-brand--hero">Wordt</h1>
+        <p className="tv-brand-byline">by Happy Management</p>
+      </div>
       <p className="tv-lead">Enter the room code shown on the host's phone.</p>
       <form className="tv-entry" onSubmit={submit}>
-        <input
-          className="tv-entry__input"
-          value={code}
-          onChange={(event) => setCode(event.target.value.toUpperCase())}
-          placeholder="ABCDE"
-          maxLength={8}
-          autoComplete="off"
-          spellCheck={false}
-          autoFocus
-        />
+        <label className="tv-entry__field">
+          <span>Room code</span>
+          <input
+            className="tv-entry__input"
+            value={code}
+            onChange={(event) => setCode(event.target.value.toUpperCase())}
+            placeholder="ABCDE"
+            maxLength={8}
+            autoComplete="off"
+            spellCheck={false}
+            autoFocus
+          />
+        </label>
         <button className="tv-btn" type="submit" disabled={code.trim().length === 0}>
           Watch
         </button>

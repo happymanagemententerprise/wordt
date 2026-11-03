@@ -79,7 +79,7 @@ export function Words({ state }: { state: PublicRoomState }): ReactNode {
         </div>
 
         <aside className="tv-feed">
-          <p className="tv-eyebrow">Just accepted</p>
+          <h3 className="tv-feed__title">Just accepted</h3>
           {feed.length === 0 ? (
             <p className="tv-hint">No words yet.</p>
           ) : (

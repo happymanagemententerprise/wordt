@@ -19,7 +19,7 @@ function Move({ delta }: { delta: number }): ReactNode {
   );
 }
 
-const CONFETTI_COLORS = ['#ffd166', '#3ddc97', '#7dd3fc', '#ff8fab', '#a5b4fc'];
+const CONFETTI_COLORS = ['#E4FF1A', '#B1E4E3', '#E4FFE6', '#127475', '#5BC7C3'];
 
 export function Results({ state, final }: { state: PublicRoomState; final: boolean }): ReactNode {
   const standings = final ? (state.finalStandings ?? state.standings) : state.standings;

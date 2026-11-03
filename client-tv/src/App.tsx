@@ -34,7 +34,7 @@ function renderPhase(state: PublicRoomState): ReactNode {
     case 'NOTICE':
       return (
         <section className="tv-stage tv-stage--notice">
-          <p className="tv-eyebrow">Heads up</p>
+          <h2>Heads up</h2>
           <p className="tv-notice">{state.notice}</p>
         </section>
       );

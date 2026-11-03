@@ -151,9 +151,14 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
             >
               {game.busy ? 'Starting…' : 'Start game'}
             </button>
-            {needsMorePlayers ? <p className="hint">At least two players are needed.</p> : null}
-            {!needsMorePlayers && state.roundSeconds == null ? (
-              <p className="hint">Set a round length to enable Start.</p>
+            {needsMorePlayers || state.roundSeconds == null ? (
+              <p className="hint" role="status" aria-live="polite">
+                {needsMorePlayers && state.roundSeconds == null
+                  ? 'Invite at least one more player and choose a round length to start.'
+                  : needsMorePlayers
+                    ? 'Invite at least one more player to enable Start.'
+                    : 'Choose a round length to enable Start.'}
+              </p>
             ) : null}
           </div>
           <button
