@@ -155,16 +155,16 @@ export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
     return <p className="empty">There are no usable letters this round.</p>;
   }
   return (
-    <div className="value-table">
+      <div className="value-table">
       {table.entries.map((entry, index) => {
         const added = table.source[entry.letter] === 'added';
         return (
-          <div key={entry.letter} className="value-row" style={{ '--i': index } as CSSProperties}>
-            <span className={`value-letter value-${Math.min(5, Math.max(1, entry.value))}`}>
+          <div key={entry.letter} className={`value-row${added ? ' value-row--added' : ''}`} style={{ '--i': index } as CSSProperties}>
+            <span className={`value-letter lv-${Math.min(5, Math.max(1, entry.value))}`}>
               {entry.letter}
             </span>
             <span className="value-count">
-              {added ? 'added by the computer' : `picked by ${entry.count}`}
+              {added ? 'computer' : `${entry.count} picked`}
             </span>
             <span className="value-points">{entry.value} pt</span>
           </div>

@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-11-03T12:35:34.055Z",
+  "capturedAt": "2026-11-03T13:58:38.272Z",
   "purpose": "Impeccable visual review capture; not a product asset.",
   "origin": "Screenshot of the local Vite development render; no generated or sourced imagery.",
   "captureTool": "Playwright Core using Microsoft Edge",
@@ -22,7 +22,7 @@
         "width": 390,
         "height": 844
       },
-      "source": "http://localhost:5173",
+      "source": "http://127.0.0.1:5173",
       "capturedFrom": "Rendered application; screenshot only, not generated artwork."
     }
   ]

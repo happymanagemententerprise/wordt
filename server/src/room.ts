@@ -47,6 +47,7 @@ import type {
   RoundPlayerInput,
   RoundResult,
   StandingEntry,
+  SubmittedWordGroup,
   StatAward,
   ValidationResult,
   WordCheckContext,
@@ -724,7 +725,16 @@ export class Room {
 
     this.log('round_scored', this.roundScoredData(result));
 
-    this.reviewSteps = buildReviewSteps(result, spotlight);
+    const submittedWords: SubmittedWordGroup[] = [...this.players.values()]
+      .filter((player) => player.validWords.length > 0)
+      .map((player) => ({
+        playerId: player.id,
+        credit: this.teamsEnabled
+          ? `${teamName(player.teamId ?? 'A')} · ${player.name}`
+          : player.name,
+        words: [...player.validWords],
+      }));
+    this.reviewSteps = buildReviewSteps(result, spotlight, submittedWords);
     this.reviewIndex = 0;
 
     // Fire the dictionary lookups now so the meanings are usually ready by the
@@ -1030,11 +1040,19 @@ export class Room {
   }
 }
 
-function buildReviewSteps(result: RoundResult, spotlight: MissedWord[]): ReviewStep[] {
+function buildReviewSteps(
+  result: RoundResult,
+  spotlight: MissedWord[],
+  submittedWords: SubmittedWordGroup[],
+): ReviewStep[] {
   const steps: ReviewStep[] = [];
 
   if (result.rare) {
     steps.push({ kind: 'rare_letter', reveal: result.rare });
+  }
+
+  if (submittedWords.length > 0) {
+    steps.push({ kind: 'submitted_words', groups: submittedWords });
   }
 
   if (result.uniqueWords.length > 0) {

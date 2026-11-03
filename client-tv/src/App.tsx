@@ -63,7 +63,7 @@ export default function App(): ReactNode {
   if (!state) return <Centered title="Joining…" detail={tv.roomCode ?? ''} />;
 
   return (
-    <div className="tv">
+    <div className="tv tv--scores">
       <header className="tv-topbar">
         <span className="tv-brand">Wordt</span>
         <span className="tv-topbar__code">{state.roomCode}</span>
@@ -72,8 +72,10 @@ export default function App(): ReactNode {
         </span>
         <span className="tv-pill tv-pill--phase">{phaseLabel(state.phase)}</span>
       </header>
-      <WarBar state={state} />
       <main className="tv-content">{renderPhase(state)}</main>
+      <footer className="tv-score-footer">
+        <WarBar state={state} />
+      </footer>
       <TimeWatermark state={state} />
     </div>
   );

@@ -55,30 +55,33 @@ export function Crown({ podium = false }: { podium?: boolean }): ReactNode {
 /** Split battle bar showing each team's live share of the total score. */
 export function WarBar({ state }: { state: PublicRoomState }): ReactNode {
   const teams = state.teams ?? [];
-  if (!state.teamsEnabled || teams.length < 2) return null;
+  const rows = state.teamsEnabled ? teams : state.standings;
+  if (rows.length === 0 || (state.teamsEnabled && teams.length < 2)) return null;
 
-  const total = teams.reduce((sum, team) => sum + team.score, 0);
+  const total = rows.reduce((sum, row) => sum + row.score, 0);
   return (
-    <div className="tv-warbar" aria-label="Team scores">
+    <div className={`tv-warbar${state.teamsEnabled ? ' tv-warbar--teams' : ' tv-warbar--players'}`} aria-label={state.teamsEnabled ? 'Team scores' : 'Player scores'}>
       <div className="tv-warbar__labels">
-        {teams.map((team) => (
-          <span key={team.id} className={`tv-warbar__label tv-team-text--${team.id}`}>
-            {team.name}
-            <b key={team.score} className="tv-warbar__score">
-              {team.score}
+        {rows.map((row) => (
+          <span key={row.id} className={`tv-warbar__label${state.teamsEnabled ? ` tv-team-text--${row.id}` : ''}`}>
+            {row.name}
+            <b key={row.score} className="tv-warbar__score">
+              {row.score}
             </b>
           </span>
         ))}
       </div>
-      <div className="tv-warbar__track">
-        {teams.map((team) => (
-          <span
-            key={team.id}
-            className={`tv-warbar__seg tv-warbar__seg--${team.id}`}
-            style={{ width: `${total === 0 ? 100 / teams.length : (team.score / total) * 100}%` }}
-          />
-        ))}
-      </div>
+      {state.teamsEnabled ? (
+        <div className="tv-warbar__track">
+          {teams.map((team) => (
+            <span
+              key={team.id}
+              className={`tv-warbar__seg tv-warbar__seg--${team.id}`}
+              style={{ width: `${total === 0 ? 100 / teams.length : (team.score / total) * 100}%` }}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

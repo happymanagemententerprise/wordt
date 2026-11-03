@@ -91,6 +91,8 @@ export interface StatAward {
   value: number | string;
   /** Who to credit on screen: "Alice", or "Team A · Alice" when teams are on. */
   credit: string;
+  /** The words that achieved a word-based award, including ties. */
+  wordResults?: { credit: string; word: string }[];
 }
 
 export interface PlayerRoundResult {
@@ -146,6 +148,13 @@ export interface DraftPenaltyEntry {
   unused: Letter[];
   /** Always negative or zero. */
   points: number;
+}
+
+/** Every valid word entered by one player during the round. */
+export interface SubmittedWordGroup {
+  playerId: PlayerId;
+  credit: string;
+  words: string[];
 }
 
 /** A short definition for a spotlight word, fetched on the server. */
@@ -214,6 +223,7 @@ export interface RoomPlayer {
 /** One step of the end-of-round result review, revealed on the TV in order. */
 export type ReviewStep =
   | { kind: 'rare_letter'; reveal: RareLetterReveal }
+  | { kind: 'submitted_words'; groups: SubmittedWordGroup[] }
   | { kind: 'unique_words'; groups: UniqueWordGroup[] }
   | { kind: 'most_used_word'; words: string[] }
   | { kind: 'stat'; award: StatAward }

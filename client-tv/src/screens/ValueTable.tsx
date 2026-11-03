@@ -44,6 +44,7 @@ export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNo
 export function Words({ state }: { state: PublicRoomState }): ReactNode {
   const total = state.players.reduce((sum, player) => sum + player.validWordCount, 0);
   const feed = state.feed ?? [];
+  const visibleFeed = [...feed].reverse().slice(0, 4);
   const streaks = feedStreaks(feed);
   const labelOf = (item: { playerName: string; teamName: string | null }) =>
     item.teamName ? `${item.teamName} · ${item.playerName}` : item.playerName;
@@ -84,7 +85,7 @@ export function Words({ state }: { state: PublicRoomState }): ReactNode {
             <p className="tv-hint">No words yet.</p>
           ) : (
             <ol className="tv-feed__list">
-              {[...feed].reverse().map((item, index) => {
+              {visibleFeed.map((item, index) => {
                 const chronological = feed.length - 1 - index;
                 const streak = streaks[chronological] ?? 1;
                 const endsRun =

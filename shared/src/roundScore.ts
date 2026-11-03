@@ -176,6 +176,7 @@ export function scoreRound(
     label: 'Longest word',
     points: config.bonuses.longestWord,
     valueOf: (result) => longestWordLength(result),
+    wordsOf: (result) => longestWords(result),
     authorOf: (result) => result.longestWordAuthor,
   });
 
@@ -184,6 +185,7 @@ export function scoreRound(
     label: 'Highest-scoring word',
     points: config.bonuses.mostPointWords,
     valueOf: (result) => bestWordScore(result),
+    wordsOf: (result) => highestScoringWords(result),
     authorOf: (result) => result.bestWordAuthor,
   });
 
@@ -371,6 +373,13 @@ function longestWordLength(result: PlayerRoundResult): number {
   return longest;
 }
 
+function longestWords(result: PlayerRoundResult): string[] {
+  const longest = longestWordLength(result);
+  return Object.keys(result.wordPoints)
+    .filter((word) => word.length === longest)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 function bestWordScore(result: PlayerRoundResult): number {
   let best = 0;
   for (const points of Object.values(result.wordPoints)) {
@@ -379,11 +388,21 @@ function bestWordScore(result: PlayerRoundResult): number {
   return best;
 }
 
+function highestScoringWords(result: PlayerRoundResult): string[] {
+  const best = bestWordScore(result);
+  return Object.entries(result.wordPoints)
+    .filter(([, points]) => points === best)
+    .map(([word]) => word)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 interface AwardSpec<T> {
   stat: string;
   label: string;
   points: number;
   valueOf: (result: PlayerRoundResult) => T;
+  /** Words that achieved the value, for visible word-based awards. */
+  wordsOf?: (result: PlayerRoundResult) => string[];
   /** Returns true when a higher value means a better result. Defaults to numeric >. */
   higherIsBetter?: (a: T, b: T) => boolean;
   /** The member who actually produced the value, for team attribution. */
@@ -450,6 +469,16 @@ class AwardTracker {
       winners,
       value,
       credit: this.creditFor(winners, spec.authorOf),
+      ...(spec.wordsOf
+        ? {
+            wordResults: winners.flatMap((id) => {
+              const result = this.results.get(id);
+              if (!result) return [];
+              const credit = this.creditFor([id], spec.authorOf);
+              return spec.wordsOf!(result).map((word) => ({ credit, word }));
+            }),
+          }
+        : {}),
     };
     this.awards.push(award);
     return award;

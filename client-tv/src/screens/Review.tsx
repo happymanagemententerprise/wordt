@@ -40,6 +40,22 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
         </div>
       );
     }
+    case 'submitted_words':
+      return (
+        <div className="tv-reveal tv-reveal--submissions">
+          <p className="tv-eyebrow">Every word entered</p>
+          <div className="tv-submitted-words">
+            {step.groups.map((group) => (
+              <section key={group.playerId} className="tv-submitted-words__group">
+                <h3 className="tv-submitted-words__who">{group.credit}</h3>
+                <ul>
+                  {group.words.map((word, index) => <li key={`${word}-${index}`}>{word}</li>)}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </div>
+      );
     case 'unique_words': {
       const columns = [step.groups.slice(0, Math.ceil(step.groups.length / 2)), step.groups.slice(Math.ceil(step.groups.length / 2))].filter((column) => column.length > 0);
       return (
@@ -70,7 +86,7 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
     case 'most_used_word':
       return (
         <div className="tv-reveal">
-          <p className="tv-eyebrow">Found by the most players</p>
+          <p className="tv-eyebrow">Shared by the most players</p>
           <p className="tv-reveal__word">{step.words.join(' · ')}</p>
         </div>
       );
@@ -78,11 +94,27 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
       return (
         <div className="tv-reveal">
           <p className="tv-eyebrow">+{step.award.points} points</p>
-          <p className="tv-reveal__word">{step.award.label}</p>
-          <p className="tv-reveal__who">
-            {step.award.credit || 'shared too evenly'}
-            <span className="tv-reveal__points"> · {String(step.award.value)}</span>
-          </p>
+          <p className="tv-reveal__sub">{step.award.label}</p>
+          {step.award.wordResults?.length ? (
+            <div className="tv-award-words">
+              {step.award.wordResults.map((entry, index) => (
+                <div key={`${entry.credit}-${entry.word}-${index}`} className="tv-award-word">
+                  <strong>{entry.word}</strong>
+                  <span>{entry.credit}</span>
+                  <em>
+                    {step.award.stat === 'most_point_words'
+                      ? `+${step.award.value} word points`
+                      : `${entry.word.length} letters`}
+                  </em>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="tv-reveal__who">
+              {step.award.credit || 'shared too evenly'}
+              <span className="tv-reveal__points"> · {String(step.award.value)}</span>
+            </p>
+          )}
         </div>
       );
     case 'draft_penalty': {
@@ -90,10 +122,18 @@ function Reveal({ step, state }: { step: ReviewStep; state: PublicRoomState }): 
       return (
         <div className="tv-reveal">
           <p className="tv-eyebrow">Draft penalty</p>
-          <p className="tv-reveal__word">{total}</p>
-          <p className="tv-reveal__who">
-            {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
-          </p>
+          <div className="tv-draft-penalties">
+            {step.entries.map((entry) => (
+              <div key={entry.id} className="tv-draft-penalty">
+                <h3>{entry.label}</h3>
+                <div className="tv-draft-penalty__letters" aria-label={`Unused letters for ${entry.label}`}>
+                  {entry.unused.map((letter) => <span key={letter}>{letter}</span>)}
+                </div>
+                <strong>{entry.points} pts</strong>
+              </div>
+            ))}
+          </div>
+          <p className="tv-reveal__points">{total} point draft penalty</p>
         </div>
       );
     }

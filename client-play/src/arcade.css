@@ -148,7 +148,9 @@ input {
 }
 
 .hero {
+  width: 100%;
   margin: 0 0 0.4rem;
+  text-align: center;
 }
 
 .hero__title {
@@ -160,8 +162,10 @@ input {
 }
 
 .hero__tagline {
+  width: min(100%, 28ch);
   max-width: 28ch;
-  margin: 0.65rem 0 0;
+  margin: 0.65rem auto 0;
+  text-align: center;
   color: var(--muted);
   font-size: 1rem;
 }
@@ -457,6 +461,135 @@ input {
 
 .wordlist__points {
   color: var(--tap);
+}
+
+.value-table {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 0.55rem;
+}
+
+.value-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.55rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.value-letter {
+  display: grid;
+  place-items: center;
+  min-width: 1.35em;
+  width: auto;
+  height: auto;
+  padding: 0.14em 0.3em;
+  border-radius: 0.16em;
+  background: var(--tile);
+  color: var(--tile-ink);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.26);
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: clamp(2rem, 7vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.value-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.value-points {
+  color: var(--tap);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.submitted-word-groups,
+.draft-penalties,
+.award-words {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.submitted-word-group,
+.draft-penalty,
+.award-word {
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.submitted-word-group h3,
+.draft-penalty > p {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.submitted-word-group ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.submitted-word-group li {
+  padding: 0.16rem 0.4rem;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.award-word {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+}
+
+.award-word strong {
+  color: var(--accent);
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-size: clamp(1.8rem, 8vw, 2.8rem);
+  line-height: 1;
+}
+
+.award-word span,
+.award-word em,
+.draft-penalty strong {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.draft-penalty__letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-bottom: 0.35rem;
+}
+
+.draft-penalty__letters span {
+  display: grid;
+  place-items: center;
+  min-width: 1.5em;
+  height: 1.5em;
+  border-radius: 5px;
+  background: var(--tile);
+  color: var(--tile-ink);
+  font-family: 'Barlow Condensed', Impact, sans-serif;
+  font-weight: 700;
 }
 
 .empty {

@@ -30,7 +30,7 @@ export function Review({ game }: { game: GameApi }): ReactNode {
               {step.reveal.awarded.length > 0 ? ` · +${step.reveal.value}` : ''}
             </p>
             <p className="reveal__word">{step.reveal.letter}</p>
-<p className="reveal__who">
+            <p className="reveal__who">
               {step.reveal.finders.length === 0
                 ? 'nobody used it this round'
                 : step.reveal.zeroed.length > 0 && step.reveal.awarded.length === 0
@@ -41,6 +41,20 @@ export function Review({ game }: { game: GameApi }): ReactNode {
                       ? `${step.reveal.finders.map((finder) => finder.credit).join(' and ')} both found it`
                       : `${step.reveal.finders[0]!.credit} found it in "${step.reveal.finders[0]!.word}"`}
             </p>
+          </>
+        ) : step.kind === 'submitted_words' ? (
+          <>
+            <p className="eyebrow">Every word entered</p>
+            <div className="submitted-word-groups">
+              {step.groups.map((group) => (
+                <section key={group.playerId} className="submitted-word-group">
+                  <h3>{group.credit}</h3>
+                  <ul>
+                    {group.words.map((word, index) => <li key={`${word}-${index}`}>{word}</li>)}
+                  </ul>
+                </section>
+              ))}
+            </div>
           </>
         ) : step.kind === 'unique_words' ? (
           <>
@@ -59,7 +73,7 @@ export function Review({ game }: { game: GameApi }): ReactNode {
           </>
         ) : step.kind === 'most_used_word' ? (
           <>
-            <p className="eyebrow">Most used word</p>
+            <p className="eyebrow">Shared by the most players</p>
             <p className="reveal__word">{step.words.join(' · ')}</p>
             <p className="reveal__who">the same word kept coming up</p>
           </>
@@ -68,18 +82,43 @@ export function Review({ game }: { game: GameApi }): ReactNode {
             <p className="eyebrow">
               {step.award.label} · +{step.award.points}
             </p>
-            <p className="reveal__word">{String(step.award.value)}</p>
-            <p className="reveal__who">
-              {step.award.credit || 'shared too evenly — nobody scored'}
-            </p>
+            {step.award.wordResults?.length ? (
+              <div className="award-words">
+                {step.award.wordResults.map((entry, index) => (
+                  <div key={`${entry.credit}-${entry.word}-${index}`} className="award-word">
+                    <strong>{entry.word}</strong>
+                    <span>{entry.credit}</span>
+                    <em>
+                      {step.award.stat === 'most_point_words'
+                        ? `+${step.award.value} word points`
+                        : `${entry.word.length} letters`}
+                    </em>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="reveal__word">{String(step.award.value)}</p>
+            )}
+            {!step.award.wordResults?.length ? (
+              <p className="reveal__who">
+                {step.award.credit || 'shared too evenly — nobody scored'}
+              </p>
+            ) : null}
           </>
         ) : step.kind === 'draft_penalty' ? (
           <>
             <p className="eyebrow">Draft penalty</p>
-            <p className="reveal__word">{step.entries.length}</p>
-            <p className="reveal__who">
-              {step.entries.map((entry) => `${entry.label} ${entry.points}`).join(' · ')}
-            </p>
+            <div className="draft-penalties">
+              {step.entries.map((entry) => (
+                <div key={entry.id} className="draft-penalty">
+                  <p>{entry.label}</p>
+                  <div className="draft-penalty__letters" aria-label={`Unused letters for ${entry.label}`}>
+                    {entry.unused.map((letter) => <span key={letter}>{letter}</span>)}
+                  </div>
+                  <strong>{entry.points} pts</strong>
+                </div>
+              ))}
+            </div>
           </>
         ) : step.kind === 'spotlight' ? (
           <>
