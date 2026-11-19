@@ -31,7 +31,7 @@ export function ValueTableScreen({ game }: { game: GameApi }): ReactNode {
         </div>
       ) : null}
 
-      {state.letterValues ? <ValueTable table={state.letterValues} /> : null}
+      {state.letterValues ? <ValueTable table={state.letterValues} mine={game.own?.pick} /> : null}
     </section>
   );
 }

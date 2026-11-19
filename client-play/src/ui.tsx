@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
-import { formatRound, type LetterValueTable, type PublicPlayer } from '@wordt/shared';
+import { formatRound, type Letter, type LetterValueTable, type PublicPlayer } from '@wordt/shared';
 
 /** Seconds remaining until the server ends the current phase. */
 export function useCountdown(endsAt: number | null): number {
@@ -150,21 +150,31 @@ export function Standings({
   );
 }
 
-export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
+export function ValueTable({
+  table,
+  mine,
+}: {
+  table: LetterValueTable;
+  /** This player's picked letters, glowed so they are easy to spot in the pool. */
+  mine?: readonly Letter[];
+}): ReactNode {
   if (table.entries.length === 0) {
     return <p className="empty">There are no usable letters this round.</p>;
   }
+  const picked = new Set<string>(mine ?? []);
   return (
       <div className="value-table">
       {table.entries.map((entry, index) => {
         const added = table.source[entry.letter] === 'added';
+        const isMine = picked.has(entry.letter);
         return (
-          <div key={entry.letter} className={`value-row${added ? ' value-row--added' : ''}`} style={{ '--i': index } as CSSProperties}>
-            <span className={`value-letter lv-${Math.min(5, Math.max(1, entry.value))}`}>
+          <div key={entry.letter} className={`value-row${added ? ' value-row--added' : ''}${isMine ? ' value-row--mine' : ''}`} style={{ '--i': index } as CSSProperties}>
+            <span className={`value-letter lv-${Math.min(5, Math.max(1, entry.value))}${isMine ? ' value-letter--mine' : ''}`}>
               {entry.letter}
             </span>
             <span className="value-count">
               {added ? 'computer' : `${entry.count} picked`}
+              {isMine ? ' · yours' : ''}
             </span>
             <span className="value-points">{entry.value} pt</span>
           </div>
@@ -174,11 +184,18 @@ export function ValueTable({ table }: { table: LetterValueTable }): ReactNode {
   );
 }
 
-export function LetterChips({ table }: { table: LetterValueTable }): ReactNode {
+export function LetterChips({
+  table,
+  mine,
+}: {
+  table: LetterValueTable;
+  mine?: readonly Letter[];
+}): ReactNode {
+  const picked = new Set<string>(mine ?? []);
   return (
     <div className="chips">
       {table.entries.map((entry) => (
-        <span key={entry.letter} className="chip">
+        <span key={entry.letter} className={`chip${picked.has(entry.letter) ? ' chip--mine' : ''}`}>
           {entry.letter}
           <em>{entry.value}</em>
         </span>

@@ -57,7 +57,7 @@ export function Words({ game }: { game: GameApi }): ReactNode {
         </div>
       ) : null}
 
-      {state.letterValues ? <LetterChips table={state.letterValues} /> : null}
+      {state.letterValues ? <LetterChips table={state.letterValues} mine={own.pick} /> : null}
 
       <form className="composer" onSubmit={submit}>
         <input

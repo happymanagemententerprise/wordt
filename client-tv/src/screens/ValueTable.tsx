@@ -35,6 +35,24 @@ export function ValueTableScreen({ state }: { state: PublicRoomState }): ReactNo
       </header>
       <div className="tv-value-layout">
         <ValueTable table={state.letterValues} />
+        <ul className="tv-pick-rows" aria-label="Letters each player picked">
+          {state.players.map((player) => (
+            <li key={player.id} className="tv-pick-row">
+              <span className="tv-pick-row__name">{player.name}</span>
+              <span className="tv-pick-row__letters">
+                {player.pick.length === 0 ? (
+                  <em>still picking…</em>
+                ) : (
+                  player.pick.map((letter, index) => (
+                    <span key={`${letter}-${index}`} className="tv-pick-row__letter">
+                      {letter}
+                    </span>
+                  ))
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
         <RareLetter state={state} />
       </div>
     </section>
