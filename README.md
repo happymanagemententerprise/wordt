@@ -177,6 +177,16 @@ Rounds repeat for the host's chosen count (3 by default, 5, or unlimited). Final
 standings are ordered by score, then by total valid words; players still level
 share the win.
 
+### Solo practice
+
+Choose **Solo practice** on the phone home screen, enter a name and tap *Start
+practice*. You play alone against the clock — no second phone, room code or TV is
+needed. A solo room starts with the standard 120-second word phase (changeable in
+the lobby, along with the round count), gives you the full 15-letter share and
+runs the same value table, review and scoring as a party game. Your best score is
+saved on that device and shown on the home screen and final results. Solo rooms
+are private: nobody else can join with the code, and teams stay off.
+
 ---
 
 ## Deploying
@@ -234,7 +244,7 @@ repo cache from connect time for exactly that reason.
 
 | event           | payload                  | who   | purpose                         |
 | --------------- | ------------------------ | ----- | ------------------------------- |
-| `room:create`   | `{ name }`               | phone | create a room, becomes host     |
+| `room:create`   | `{ name, solo? }`        | phone | create a room (`solo: true` for private practice), becomes host |
 | `room:join`     | `{ roomCode, name?, playerId? }` | phone | join or rejoin a room      |
 | `tv:watch`      | `{ roomCode }`           | TV    | watch a room, no player seat    |
 | `host:start`    | —                        | host  | lobby → picking, or new game    |

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
 import type { GameApi } from '../game';
+import { loadSoloBest } from '../soloBest';
 import { Rules } from './Rules';
 
 const ROOM_PARAM = 'room';
@@ -15,12 +16,13 @@ function codeFromUrl(): string {
 
 export function Join({ game }: { game: GameApi }): ReactNode {
   const initialCode = codeFromUrl();
-  const [mode, setMode] = useState<'join' | 'create'>('join');
+  const [mode, setMode] = useState<'solo' | 'join' | 'create'>('join');
   const [lockedToJoin] = useState(Boolean(initialCode));
   const [showRules, setShowRules] = useState(false);
   const [name, setName] = useState('');
   const [code, setCode] = useState(initialCode);
-  const [pending, setPending] = useState<'join' | 'create' | null>(null);
+  const [pending, setPending] = useState<'solo' | 'join' | 'create' | null>(null);
+  const soloBest = loadSoloBest();
   const [localError, setLocalError] = useState<string | null>(null);
 
   // A room code pasted into the URL switches us to Join and fills the field, live.
@@ -44,7 +46,7 @@ export function Join({ game }: { game: GameApi }): ReactNode {
     if (next !== current) window.history.replaceState(null, '', next);
   }, [mode, code]);
 
-  const run = async (action: 'join' | 'create') => {
+  const run = async (action: 'solo' | 'join' | 'create') => {
     const trimmedName = name.trim();
     const trimmedCode = code.trim().toUpperCase();
     if (!trimmedName) {
@@ -58,9 +60,11 @@ export function Join({ game }: { game: GameApi }): ReactNode {
     setPending(action);
     try {
       const ack =
-        action === 'create'
-          ? await game.createRoom(trimmedName)
-          : await game.joinRoom(trimmedCode, trimmedName);
+        action === 'solo'
+          ? await game.createSoloRoom(trimmedName)
+          : action === 'create'
+            ? await game.createRoom(trimmedName)
+            : await game.joinRoom(trimmedCode, trimmedName);
       if (!ack.ok) setLocalError(ack.error ?? 'Could not continue.');
     } finally {
       setPending(null);
@@ -75,6 +79,11 @@ export function Join({ game }: { game: GameApi }): ReactNode {
   const onCreate = (event: FormEvent) => {
     event.preventDefault();
     void run('create');
+  };
+
+  const onSolo = (event: FormEvent) => {
+    event.preventDefault();
+    void run('solo');
   };
 
   const message = localError ?? game.error;
@@ -97,6 +106,17 @@ export function Join({ game }: { game: GameApi }): ReactNode {
 
       {!lockedToJoin ? (
         <div className="chooser" role="group" aria-label="Choose how to start">
+          <button
+            type="button"
+            aria-pressed={mode === 'solo'}
+            className={`chooser__tab${mode === 'solo' ? ' chooser__tab--on' : ''}`}
+            onClick={() => {
+              setMode('solo');
+              setLocalError(null);
+            }}
+          >
+            Solo practice
+          </button>
           <button
             type="button"
             aria-pressed={mode === 'join'}
@@ -122,7 +142,37 @@ export function Join({ game }: { game: GameApi }): ReactNode {
         </div>
       ) : null}
 
-      {mode === 'join' ? (
+      {mode === 'solo' ? (
+        <form className="stack" onSubmit={onSolo}>
+          <p className="hint">
+            Play on your own against the clock. No friends, room code or TV needed.
+          </p>
+          <label className="field">
+            <span className="field__label">Your name</span>
+            <input
+              className="input"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                setLocalError(null);
+              }}
+              placeholder="e.g. Sam"
+              maxLength={16}
+              required
+              autoComplete="nickname"
+            />
+          </label>
+          {soloBest ? (
+            <p className="myround">
+              Your best: <strong>{soloBest.score}</strong> points over {soloBest.rounds}{' '}
+              {soloBest.rounds === 1 ? 'round' : 'rounds'}
+            </p>
+          ) : null}
+          <button className="btn btn--primary" type="submit" disabled={pending !== null}>
+            {pending === 'solo' ? 'Starting…' : 'Start practice'}
+          </button>
+        </form>
+      ) : mode === 'join' ? (
         <form className="stack" onSubmit={onJoin}>
           <label className="field">
             <span className="field__label">Room code</span>

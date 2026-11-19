@@ -9,6 +9,7 @@ import {
   MIN_WORD_LENGTH,
   ROUND_SECONDS_MAX,
   ROUND_SECONDS_MIN,
+  WORD_PHASE_SECONDS,
   type JoinAck,
   type WordRejection,
 } from '@wordt/shared';
@@ -245,10 +246,11 @@ function makeCode(taken: Map<string, Entry>): string {
 }
 
 io.on('connection', (socket: Socket) => {
-  on<{ name?: string }, JoinAck>(socket, 'room:create', (payload, ack) => {
+  on<{ name?: string; solo?: boolean }, JoinAck>(socket, 'room:create', (payload, ack) => {
     detach(socket);
     const code = makeCode(rooms);
-    const entry: Entry = { room: new Room(io, code), watchers: new Set(), cleanup: null };
+    const solo = payload?.solo === true;
+    const entry: Entry = { room: new Room(io, code, solo), watchers: new Set(), cleanup: null };
     rooms.set(code, entry);
 
     socket.join(code);
@@ -262,10 +264,13 @@ io.on('connection', (socket: Socket) => {
     }
 
     sessions.set(socket.id, { roomCode: code, playerId: player.id, tv: false });
+    // Solo practice can start straight away: give it the standard word length
+    // as a default, which the player can still change in the lobby.
+    if (solo) entry.room.setWordSeconds(player.id, WORD_PHASE_SECONDS);
     ack({ ok: true, roomCode: code, playerId: player.id });
     entry.room.emitState();
     entry.room.emitOwn(player.id);
-    console.log(`[wordt] room ${code} created by ${player.name}`);
+    console.log(`[wordt] ${solo ? 'solo practice' : 'room'} ${code} created by ${player.name}`);
   });
 
   on<{ roomCode?: string; name?: string; playerId?: string }, JoinAck>(
@@ -276,6 +281,12 @@ io.on('connection', (socket: Socket) => {
       const entry = rooms.get(code);
       if (!entry) {
         ack({ ok: false, error: 'Room not found.' });
+        return;
+      }
+
+      // A solo room is private: only the original seat may reclaim it on reconnect.
+      if (entry.room.solo && !entry.room.players.has(String(payload?.playerId ?? ''))) {
+        ack({ ok: false, error: 'This is a solo practice game. Start your own from the home screen.' });
         return;
       }
 
@@ -352,8 +363,8 @@ io.on('connection', (socket: Socket) => {
       ack({ ok: false, error: 'The game is already running.' });
       return;
     }
-    if (connectedCount(room) < 2) {
-      ack({ ok: false, error: 'At least two players must be connected.' });
+    if (connectedCount(room) < (room.solo ? 1 : 2)) {
+      ack({ ok: false, error: room.solo ? 'Reconnect to continue your practice.' : 'At least two players must be connected.' });
       return;
     }
     if (room.wordSeconds == null) {
@@ -570,6 +581,10 @@ io.on('connection', (socket: Socket) => {
     }
     if (ctx.entry.room.host?.id !== ctx.playerId) {
       ack({ ok: false, error: 'Only the host can do that.' });
+      return;
+    }
+    if (ctx.entry.room.solo) {
+      ack({ ok: false, error: 'Teams are not available in solo practice.' });
       return;
     }
     const enabled = Boolean(payload?.enabled);

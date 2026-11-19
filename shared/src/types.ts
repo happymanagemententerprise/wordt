@@ -274,6 +274,8 @@ export interface FeedItem {
 
 export interface PublicRoomState {
   roomCode: RoomCode;
+  /** Private single-player practice room: no friends or TV required. */
+  solo: boolean;
   phase: Phase;
   round: number;
   /** The host's chosen round count, or null for unlimited rounds. */

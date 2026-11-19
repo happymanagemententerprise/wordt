@@ -45,6 +45,18 @@ describe('scoreRound', () => {
     expect(result.players[0]?.baseScore).toBe(7);
   });
 
+  it('scores a one-player solo round without a shared-word penalty', () => {
+    // DAT = 2 + 4 + 2 with the worked-example table.
+    const result = scoreRound(round([player('solo', ['TREE', 'DAT'])]));
+    const solo = result.players[0]!;
+
+    expect(solo.baseScore).toBe(15);
+    expect(solo.sameWordPenalty).toBe(0);
+    expect(result.uniqueWords).toHaveLength(2);
+    expect(result.mostUsedWords).toEqual([]);
+    expect(solo.roundScore).toBeGreaterThan(solo.baseScore);
+  });
+
   describe('2 players, every usable letter tied at count 2', () => {
     it('awards unique words and the shared-word penalty', () => {
       const result = scoreRound(

@@ -1,8 +1,9 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { finalRanks, medalForRank } from '../finalRanks';
 import { Medal, WinnerFigure } from '../FinalCelebration';
 import type { GameApi } from '../game';
+import { recordSoloBest, type SoloBest } from '../soloBest';
 import { Standings, type StandingDecoration } from '../ui';
 
 const CONFETTI_COLORS = ['#E4FF1A', '#B1E4E3', '#E4FFE6', '#127475', '#5BC7C3'];
@@ -39,6 +40,11 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
   const unitId = teamPlay ? (own.teamId as string) : own.id;
   const mine = state.lastRoundResult?.players.find((unit) => unit.id === unitId);
   const ranks = final ? finalRanks(standings) : undefined;
+  const [soloRecord, setSoloRecord] = useState<{ best: SoloBest; improved: boolean } | null>(null);
+
+  useEffect(() => {
+    if (final && state.solo) setSoloRecord(recordSoloBest(own.score, state.round));
+  }, [final, state.solo, state.roomCode, own.score, state.round]);
 
   const decorate = final
     ? (_player: (typeof standings)[number], rank: number): StandingDecoration | null => {
@@ -52,6 +58,14 @@ export function Scoreboard({ game, final }: { game: GameApi; final: boolean }): 
     <section className={`screen${final ? ' screen--final' : ''}`}>
       {final ? <Confetti /> : null}
       <h2>{final ? 'Final results' : `Round ${state.round} results`}</h2>
+
+      {state.solo && final && soloRecord ? (
+        <p className="myround">
+          {soloRecord.improved ? 'New personal best!' : 'Your best'}:{' '}
+          <strong>{soloRecord.best.score}</strong> points over {soloRecord.best.rounds}{' '}
+          {soloRecord.best.rounds === 1 ? 'round' : 'rounds'}
+        </p>
+      ) : null}
 
       {mine ? (
         <p className="myround">

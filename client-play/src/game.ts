@@ -77,6 +77,7 @@ export interface GameApi {
   busy: boolean;
   dismissError: () => void;
   createRoom: (name: string) => Promise<Ack>;
+  createSoloRoom: (name: string) => Promise<Ack>;
   joinRoom: (roomCode: string, name: string, playerId?: string) => Promise<Ack>;
   start: () => Promise<Ack>;
   nextRound: () => Promise<Ack>;
@@ -209,6 +210,11 @@ export function useGame(): GameApi {
     [adopt],
   );
 
+  const createSoloRoom = useCallback(
+    async (name: string) => adopt(await ask('room:create', { name, solo: true }), name),
+    [adopt],
+  );
+
   const joinRoom = useCallback(
     async (roomCode: string, name: string, playerId?: string) =>
       adopt(await ask('room:join', { roomCode, name, playerId }), name),
@@ -224,6 +230,7 @@ export function useGame(): GameApi {
     busy,
     dismissError,
     createRoom,
+    createSoloRoom,
     joinRoom,
     start: () => guarded('host:start'),
     nextRound: () => guarded('host:next'),

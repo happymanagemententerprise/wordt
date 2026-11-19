@@ -9,6 +9,7 @@ import {
 } from '@wordt/shared';
 
 import type { GameApi } from '../game';
+import { loadSoloBest } from '../soloBest';
 import { Standings } from '../ui';
 
 function formatSeconds(total: number): string {
@@ -24,29 +25,45 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
   if (!state || !own) return null;
 
   const connectedPlayers = state.players.filter((player) => player.connected).length;
-  const needsMorePlayers = connectedPlayers < 2;
+  const needsMorePlayers = !state.solo && connectedPlayers < 2;
   const teams = teamIdsForPlayerCount(state.players.length);
+  const soloBest = state.solo ? loadSoloBest() : null;
 
   return (
     <section className="screen">
-      <h2>Room code</h2>
-      <p className="room-code" aria-label={`Room code ${state.roomCode.split('').join(' ')}`}>
-        {state.roomCode.split('').join(' ')}
-      </p>
-      <p className="hint">Friends open Wordt on their phone and join with this code.</p>
+      {state.solo ? (
+        <>
+          <h2>Solo practice</h2>
+          <p className="hint">Just you, the clock and the dictionary. Play as many rounds as you like.</p>
+          {soloBest ? (
+            <p className="myround">
+              Your best: <strong>{soloBest.score}</strong> points over {soloBest.rounds}{' '}
+              {soloBest.rounds === 1 ? 'round' : 'rounds'}
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <h2>Room code</h2>
+          <p className="room-code" aria-label={`Room code ${state.roomCode.split('').join(' ')}`}>
+            {state.roomCode.split('').join(' ')}
+          </p>
+          <p className="hint">Friends open Wordt on their phone and join with this code.</p>
 
-      <h3 className="subhead">
-        Players <span className="count">{connectedPlayers}/{state.maxPlayers}</span>
-      </h3>
-      <Standings
-        players={state.players}
-        activeId={own.id}
-        onMakeHost={own.isHost ? (targetId) => void game.transferHost(targetId) : undefined}
-        onKick={own.isHost ? (targetId) => void game.kickPlayer(targetId) : undefined}
-      />
-      {own.isHost ? (
-        <p className="hint">Tap Host to hand control over, or Remove to kick someone out.</p>
-      ) : null}
+          <h3 className="subhead">
+            Players <span className="count">{connectedPlayers}/{state.maxPlayers}</span>
+          </h3>
+          <Standings
+            players={state.players}
+            activeId={own.id}
+            onMakeHost={own.isHost ? (targetId) => void game.transferHost(targetId) : undefined}
+            onKick={own.isHost ? (targetId) => void game.kickPlayer(targetId) : undefined}
+          />
+          {own.isHost ? (
+            <p className="hint">Tap Host to hand control over, or Remove to kick someone out.</p>
+          ) : null}
+        </>
+      )}
 
       {state.teamsEnabled ? (
         <>
@@ -102,7 +119,9 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
       </div>
       <p className="hint">
         {own.isHost
-          ? 'Pick how long everyone gets to write words. (Locks in for this game.)'
+          ? state.solo
+            ? 'Pick how long you get to write words each round.'
+            : 'Pick how long everyone gets to write words. (Locks in for this game.)'
           : `The host has set ${state.roundSeconds ? formatSeconds(state.roundSeconds) : 'no round length'} for each round.`}
       </p>
 
@@ -128,28 +147,32 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
       </div>
       <p className="hint">
         {own.isHost
-          ? 'Unlimited plays until you end the game yourself.'
+          ? state.solo
+            ? 'Unlimited keeps the practice going until you quit.'
+            : 'Unlimited plays until you end the game yourself.'
           : `The host has chosen ${state.roundCount == null ? 'unlimited rounds' : `${state.roundCount} rounds`}.`}
       </p>
 
       {own.isHost ? (
         <>
           <div className="actions">
-            <button
-              className="btn btn--ghost"
-              type="button"
-              disabled={game.busy}
-              onClick={() => void game.setTeamsEnabled(!state.teamsEnabled)}
-            >
-              {state.teamsEnabled ? 'Turn teams off' : 'Turn teams on'}
-            </button>
+            {!state.solo ? (
+              <button
+                className="btn btn--ghost"
+                type="button"
+                disabled={game.busy}
+                onClick={() => void game.setTeamsEnabled(!state.teamsEnabled)}
+              >
+                {state.teamsEnabled ? 'Turn teams off' : 'Turn teams on'}
+              </button>
+            ) : null}
             <button
               className="btn btn--primary"
               type="button"
               disabled={game.busy || needsMorePlayers || state.roundSeconds == null}
               onClick={() => void game.start()}
             >
-              {game.busy ? 'Starting…' : 'Start game'}
+              {game.busy ? 'Starting…' : state.solo ? 'Start practice' : 'Start game'}
             </button>
             {needsMorePlayers || state.roundSeconds == null ? (
               <p className="hint" role="status" aria-live="polite">
@@ -157,7 +180,9 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
                   ? 'Invite at least one more player and choose a round length to start.'
                   : needsMorePlayers
                     ? 'Invite at least one more player to enable Start.'
-                    : 'Choose a round length to enable Start.'}
+                    : state.solo
+                      ? 'Choose a round length to enable Start practice.'
+                      : 'Choose a round length to enable Start.'}
               </p>
             ) : null}
           </div>
@@ -167,7 +192,7 @@ export function Lobby({ game }: { game: GameApi }): ReactNode {
             disabled={game.busy}
             onClick={() => void game.leave()}
           >
-            Leave room
+            {state.solo ? 'Quit practice' : 'Leave room'}
           </button>
         </>
       ) : (

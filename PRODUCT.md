@@ -42,10 +42,12 @@ words, locking in. Competitive but social and fun; energetic, not solemn.
 ## Surfaces
 
 - **Phone client** (`client-play/`, Vite + React, port 5173): the player
-  controller. Screens: Join (room code / create), Lobby (room code, players, host
-  controls, round length, round count, teams), Pick (letter keyboard), Value
-  Table, Words (composer + word list + score), Review (reveal steps), Results
-  (standings + winner celebration), How to Play (illustrated carousel).
+  controller. Screens: Join (room code / create / solo practice), Lobby (room
+  code, players, host controls, round length, round count, teams), Pick (letter
+  keyboard), Value Table, Words (composer + word list + score), Review (reveal
+  steps), Results (standings + winner celebration), How to Play (illustrated
+  carousel). Solo practice is a private one-player room with no TV requirement
+  and a device-local personal best.
 - **TV client** (`client-tv/`, Vite + React, port 5174): display-only. Screens:
   Room entry, Lobby (code + QR + players), Pick (per-player progress), Value
   Table (big tiles), Words (board + live feed + writers), Notice, Review (reveal

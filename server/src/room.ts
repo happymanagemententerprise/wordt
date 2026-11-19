@@ -114,6 +114,8 @@ function makeRoomCode(): string {
  */
 export class Room {
   readonly code: string;
+  /** Solo practice rooms hold one player and never accept a second. */
+  readonly solo: boolean;
   phase: Phase = 'LOBBY';
   round = 0;
   phaseEndsAt: number | null = null;
@@ -143,9 +145,10 @@ export class Room {
   private readonly io: Server;
   private destroyed = false;
 
-  constructor(io: Server, code = makeRoomCode()) {
+  constructor(io: Server, code = makeRoomCode(), solo = false) {
     this.io = io;
     this.code = code;
+    this.solo = solo;
   }
 
   /**
@@ -252,17 +255,18 @@ export class Room {
 
   // --------------------------------------------------------------- controls
 
-  /** Host-only. Requires at least two connected players. */
+  /** Host-only. Solo practice needs one connected player; a party needs two. */
   startGame(playerId: PlayerId): boolean {
     if (this.phase !== 'LOBBY' && this.phase !== 'GAME_OVER') return false;
     if (this.host?.id !== playerId) return false;
-    if ([...this.players.values()].filter((p) => p.connected).length < 2) return false;
+    const connected = [...this.players.values()].filter((p) => p.connected).length;
+    if (connected < (this.solo ? 1 : 2)) return false;
 
-    const playerCount = [...this.players.values()].filter((p) => p.connected).length;
+    const playerCount = connected;
     this.gameId = `g_${randomUUID()}`;
     this.log(
       'game_start',
-      { playerCount, teamMode: this.teamsEnabled, roundSeconds: this.wordSeconds },
+      { playerCount, teamMode: this.teamsEnabled, roundSeconds: this.wordSeconds, solo: this.solo },
       null,
     );
 
@@ -448,6 +452,7 @@ export class Room {
   setTeamsEnabled(playerId: PlayerId, enabled: boolean): boolean {
     if (this.phase !== 'LOBBY') return false;
     if (this.host?.id !== playerId) return false;
+    if (this.solo) return false;
     if (this.teamsEnabled === enabled) return true;
 
     this.teamsEnabled = enabled;
@@ -951,6 +956,7 @@ export class Room {
 
     return {
       roomCode: this.code,
+      solo: this.solo,
       phase: this.phase,
       round: this.round,
       roundCount: this.roundLimit,

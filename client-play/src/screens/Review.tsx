@@ -159,7 +159,11 @@ export function Review({ game }: { game: GameApi }): ReactNode {
         </p>
       ) : null}
 
-      <p className="hint">Keep watching the big screen for the rest of the results.</p>
+      <p className="hint">
+        {state.solo
+          ? 'Your round was scored on the server. Keep going to see how you did.'
+          : 'Keep watching the big screen for the rest of the results.'}
+      </p>
 
       {own.isHost ? (
         <div className="actions">

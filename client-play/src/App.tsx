@@ -67,7 +67,11 @@ export default function App(): ReactNode {
     <div className="app">
       <header className="topbar">
         <span className="brand">Wordt</span>
-        <span className="topbar__code">{state.roomCode}</span>
+        {state.solo ? (
+          <span className="topbar__code">Solo practice</span>
+        ) : (
+          <span className="topbar__code">{state.roomCode}</span>
+        )}
         <PhasePill round={state.round} roundCount={state.roundCount} phase={state.phase} />
         {own.isHost && state.phase !== 'LOBBY' && state.phase !== 'GAME_OVER' ? (
           <button
